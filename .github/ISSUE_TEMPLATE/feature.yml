@@ -1,0 +1,55 @@
+name: Feature
+description: Propose an enhancement to the registry's structure, docs, templates, or tooling
+title: "feat(<scope>): "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this to develop the **repo itself** — schema/columns, formats, docs,
+        issue/PR templates, or tooling. To add or change **records**, use the
+        "Registry change request" form instead. App features belong in
+        `vig-os/part-registry-app`.
+
+        Replace `<scope>` in the title with one of: `schema`, `docs`, `repo`,
+        `templates`.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - schema (columns / enums / formats)
+        - docs
+        - issue / PR templates
+        - tooling / CI / config (repo)
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Concrete change to columns / format / docs / templates / tooling.
+    validations:
+      required: true
+  - type: textarea
+    id: migration
+    attributes:
+      label: Impact on forks
+      description: How must existing forks migrate? Is this breaking? (Schema changes only — write "n/a" otherwise.)
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I will update docs/SCHEMA.md if this changes the data shape
+        - label: New columns are appended at the end (forward-compatible) where applicable
