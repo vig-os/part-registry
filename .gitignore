@@ -1,0 +1,9 @@
+# OS / editor noise
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Reserved for future app bundle / deploy artifacts
+node_modules/
+dist/
