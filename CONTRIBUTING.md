@@ -5,6 +5,28 @@ changes land via Pull Request. Branching uses `main` / `dev` / `release/X.Y.Z`
 with one shortcut for data: record updates go straight to `main`, while structure
 work flows through `dev`. See [*Branching model*](#branching-model).
 
+## Fork setup
+
+This is a GitHub **template** — generate your own registry with *Use this
+template*, then make it yours (one time):
+
+1. **Delete the seed rows** in [`registry.csv`](registry.csv) and
+   [`print_log.csv`](print_log.csv) — they are illustrative. Keep the header row.
+2. **Create the workflow labels** so the issue forms can apply them: `record`,
+   `feature`, `chore` (plus `schema-change`, which structure PRs carry). `bug`
+   ships with every repo. Missing labels don't block issue creation — the label
+   is just silently dropped.
+3. **Protect `main`**: require a PR + review before merge. A fork keeps **only
+   `main`** (record updates branch off it and PR straight back) — there is no
+   `dev`/`release` cycle unless you also version your own schema.
+4. **Repoint the schema link** in
+   [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml): the
+   *Schema reference* contact link is an absolute URL to the upstream repo —
+   change it to your fork's own `docs/SCHEMA.md`. (The *App bugs* link can stay;
+   the viewer/editor app is a shared upstream project, not forked.)
+
+Then start minting.
+
 ## Workflow
 
 1. **Open an issue** using the right form:
@@ -44,11 +66,8 @@ share the same checklist. The issue form additionally tags intent with
 
 The issue forms apply their label automatically. PR templates *suggest* the
 artifact label (apply it manually, since there is no labeling automation in this
-repo yet).
-
-> First-time setup in a fork: create the `record`, `schema-change`,
-> `chore`, and `feature` labels once so the issue forms can apply them (`bug`
-> ships with every GitHub repo by default).
+repo yet). A fresh fork must create these labels first — see
+[*Fork setup*](#fork-setup).
 
 ## Branching model
 

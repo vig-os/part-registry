@@ -22,3 +22,9 @@ for the schema/template shape that forks consume.
     two-axis workflow and the `main` / `dev` / `release/X.Y.Z` branching model.
   - `CHANGELOG.md` (Keep a Changelog) tracking structure changes only — record
     (data) PRs are exempt — wired into the `schema-change.md` PR template.
+- **Fork setup checklist** ([#3](https://github.com/vig-os/part-registry/issues/3))
+  - Document the one-time fork steps (delete seed rows, create workflow labels,
+    protect `main`, repoint the schema link) in `CONTRIBUTING.md`, linked from
+    `README.md`.
+  - Flag the upstream-absolute *Schema reference* link in `config.yml` so forks
+    repoint it to their own `docs/SCHEMA.md`.
