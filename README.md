@@ -6,8 +6,10 @@ tracked through a `mint -> (label) -> bind` lifecycle. Data lives as plain CSV s
 it stays usable, diffable, and permanent — even without any app.
 
 This is a **GitHub template repository**. Fork it (Use this template) to host
-your own registry. The viewer/editor app lives separately at
-`vig-os/part-registry-app` (in progress) and is optional.
+your own registry, then run the one-time
+[Fork setup](CONTRIBUTING.md#fork-setup) (delete seed rows, create labels,
+protect `main`, repoint the schema link). The viewer/editor app lives separately
+at `vig-os/part-registry-app` (in progress) and is optional.
 
 ## What's in here
 

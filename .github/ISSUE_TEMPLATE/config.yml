@@ -1,5 +1,7 @@
 blank_issues_enabled: false
 contact_links:
+  # Fork setup: repoint this URL to your own docs/SCHEMA.md — contact_links
+  # require an absolute URL, so it cannot auto-adapt. See CONTRIBUTING.md#fork-setup.
   - name: Schema reference
     url: https://github.com/vig-os/part-registry/blob/main/docs/SCHEMA.md
     about: Field definitions, enums, ID format, and per-status rules.
