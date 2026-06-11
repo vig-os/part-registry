@@ -1,0 +1,65 @@
+name: Registry change request
+description: Request adding, binding, editing, or voiding a record when you can't open a PR yourself
+title: "record(registry): "
+labels: ["record"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this to request a change to `registry.csv` / `print_log.csv`.
+        A maintainer will turn it into a PR. See `docs/SCHEMA.md` for field rules.
+
+        This is the **only** path for record changes — in a fork, all registry
+        modifications (mint/bind/retire/void/edit) go through this form, not the
+        feature/bug/chore forms.
+  - type: dropdown
+    id: action
+    attributes:
+      label: Action
+      options:
+        - mint (create new unbound IDs)
+        - bind (attach an existing ID to a part)
+        - retire (decommission an in-service part)
+        - void (invalidate an ID; mis-mint/scrapped/mistake)
+        - edit (correct an existing record)
+    validations:
+      required: true
+  - type: input
+    id: ids
+    attributes:
+      label: Affected ID(s)
+      description: Full 14-char IDs, comma-separated. Leave blank for mint.
+      placeholder: 23456789ABCDEF, 2345ABCDEFGHJK
+  - type: input
+    id: batch
+    attributes:
+      label: Batch
+      placeholder: B-2026-06-01
+  - type: input
+    id: type
+    attributes:
+      label: Type
+      placeholder: PT100
+  - type: input
+    id: description
+    attributes:
+      label: Description
+  - type: input
+    id: vendor
+    attributes:
+      label: Vendor
+  - type: input
+    id: part_number
+    attributes:
+      label: Part number
+  - type: input
+    id: location
+    attributes:
+      label: Location
+      placeholder: lab / loop-A / supply-T
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason / notes
+    validations:
+      required: true

@@ -1,0 +1,38 @@
+name: Chore
+description: Routine maintenance — dependencies, CI/config, refactors, housekeeping
+title: "chore(<scope>): "
+labels: ["chore"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for upkeep that isn't a feature or a bug: tooling/CI/config
+        bumps, doc housekeeping, template tidy-ups, or repo-meta chores. No
+        change to the data shape or to records.
+
+        Replace `<scope>` in the title with one of: `schema`, `docs`, `repo`,
+        `templates`.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - tooling / CI / config (repo)
+        - docs housekeeping
+        - issue / PR templates
+        - repo meta
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: Task
+      description: What needs doing?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now
+      description: Optional context — what prompts this, any deadline or dependency.

@@ -1,0 +1,49 @@
+name: Bug
+description: Report a defect in the registry's data shape, docs, templates, or tooling
+title: "fix(<scope>): "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report something **wrong or broken** in this repo — an inconsistent
+        schema rule, a broken doc link, a template that produces bad output, or
+        a malformed seed row. To *correct actual records* (especially in a
+        fork), use the "Registry change request" form. Bugs in the viewer/editor
+        app belong in `vig-os/part-registry-app`.
+
+        Replace `<scope>` in the title with one of: `schema`, `docs`, `repo`,
+        `templates`.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - schema doc (rules / enums / formats)
+        - registry.csv / print_log.csv seed data
+        - docs
+        - issue / PR templates
+        - tooling / CI / config (repo)
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong
+      description: Describe the defect.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: where
+    attributes:
+      label: Where / how to reproduce
+      description: File, row id, line, or a link. Steps to reproduce if relevant.
+    validations:
+      required: true
