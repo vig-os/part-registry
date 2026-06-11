@@ -12,6 +12,8 @@ for the schema/template shape that forks consume.
 
 ## Unreleased
 
+## [0.1.0] - 2026-06-11
+
 ### Added
 
 - **Initial project scaffolding** ([#1](https://github.com/vig-os/part-registry/issues/1))
@@ -28,3 +30,5 @@ for the schema/template shape that forks consume.
     `README.md`.
   - Flag the upstream-absolute *Schema reference* link in `config.yml` so forks
     repoint it to their own `docs/SCHEMA.md`.
+
+[0.1.0]: https://github.com/vig-os/part-registry/releases/tag/0.1.0
