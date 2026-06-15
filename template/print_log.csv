@@ -1,1 +1,2 @@
 id,printed_at,printed_by,layout,size_mm,extra,copies,output_mode,batch_label
+23456789ABCDEF,2026-06-01T13:45:00+00:00,bob,horz,12,,1,single,B-2026-06-01

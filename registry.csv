@@ -1,9 +1,1 @@
 id,status,minted_at,batch,bound_at,type,description,vendor,part_number,location,notes,minted_by,bound_by,last_edited_at,last_edited_by,labeled
-23456789ABCDEF,bound,2026-06-01T08:00:00+00:00,B-2026-06-01,2026-06-01T14:00:00+00:00,PT100,Supply temperature sensor,TC Direct,402-141,lab / loop-A / supply-T,,alice,bob,2026-06-01T14:00:00+00:00,bob,yes
-2345ABCDEFGHJK,bound,2026-06-01T08:00:00+00:00,B-2026-06-01,2026-06-02T09:30:00+00:00,Thermocouple K-type,Exhaust gas thermocouple 2m,Omega Engineering,TJ36-CASS-18U,lab / exhaust / T3,,alice,carol,2026-06-02T09:30:00+00:00,carol,yes
-456789ABCDEFGH,unbound,2026-06-01T08:00:00+00:00,B-2026-06-01,,,,,,,,alice,,,,no
-789ABCDEFGHJKM,bound,2026-06-01T08:00:00+00:00,B-2026-06-01,2026-06-03T08:15:00+00:00,Flow sensor,Ultrasonic clamp-on DN25,Siemens,7ME3530-1AA00,lab / loop-A / return,,alice,bob,2026-06-03T08:15:00+00:00,bob,yes
-89ABCDEFGHJKMN,void,2026-06-01T08:00:00+00:00,B-2026-06-01,,PT100,Spare damaged in shipping,TC Direct,402-141,,label misprinted - voided,alice,,,,no
-9ABCDEFGHJKMNP,unbound,2026-06-08T08:00:00+00:00,B-2026-06-08,,,,,,,,bob,,,,no
-ABCDEFGHJKMNPQ,bound,2026-06-08T08:00:00+00:00,B-2026-06-08,2026-06-09T10:00:00+00:00,Pressure transducer,Coolant loop pressure 0-10 bar,Honeywell,PX309-150GI,lab / loop-A / supply-T,bound; physical label pending,bob,dave,2026-06-09T10:00:00+00:00,dave,no
-BCDEFGHJKMNPQR,retired,2026-05-20T08:00:00+00:00,B-2026-05-20,2026-05-21T09:00:00+00:00,RTD probe,Class A RTD 100mm insertion,TE Connectivity,NB-PTCO-068,lab / bench / CH-4,decommissioned - superseded by ABCDEFGHJKMNPQ,alice,bob,2026-06-05T12:00:00+00:00,carol,yes
