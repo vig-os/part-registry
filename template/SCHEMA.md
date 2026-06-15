@@ -1,6 +1,6 @@
 # Schema
 
-**Schema version:** 0.2.2
+**Schema version:** 0.2.3
 
 <!-- The version this document describes. The release cycle bumps it (and the
 template-sync version marker) when a release is cut — see docs/RELEASE_CYCLE.md.
