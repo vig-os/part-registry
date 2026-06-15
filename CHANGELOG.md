@@ -62,6 +62,9 @@ for the schema/template shape that forks consume.
   the new `properties` field.
 - **BREAKING: `print_log.csv` `batch_label` column** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
   orphaned by the registry `batch` removal; 9 → 8 columns.
+- **BREAKING: `print_log.csv` `output_mode` and `copies` columns** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
+  print-job mechanics with no audit value; the printed label is reproducible from
+  `layout` / `size_mm` / `extra`. 8 → 6 columns.
 
 ## [0.1.0] - 2026-06-11
 

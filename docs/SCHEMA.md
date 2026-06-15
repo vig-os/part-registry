@@ -133,5 +133,3 @@ Never edit or delete existing rows.
 | 4 | `layout` | string | Label layout, e.g. `horz` / `vert` / `flag`. |
 | 5 | `size_mm` | number | Short-side size in mm. |
 | 6 | `extra` | string | Layout-specific extra (e.g. cable OD). May be empty. |
-| 7 | `copies` | number | Number of copies printed. |
-| 8 | `output_mode` | string | e.g. `single` / `sheet` / `strip`. |
