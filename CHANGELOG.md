@@ -29,15 +29,42 @@ for the schema/template shape that forks consume.
   - Commits are created via `vig-os/commit-action` (GitHub-signed) using the
     `COMMIT_APP` / `RELEASE_APP` tokens — no PAT. No-op in the upstream template
     itself.
-  - Root `registry.csv` / `print_log.csv` now ship **header-only**; document the
-    fork-setup and release steps in `CONTRIBUTING.md`, `README.md`, and
-    `CLAUDE.md`.
+  - A read-only copy of the worked-example `registry.csv` / `print_log.csv` is
+    mirrored under `template/`; fork-setup and release steps documented in
+    `CONTRIBUTING.md`, `README.md`, and `CLAUDE.md`.
+- **`components` column** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
+  models assembly composition as a list of subcomponent registry IDs. Referential
+  integrity (exists / no self-reference / no cycles / bound-or-retired) is
+  documented in `docs/SCHEMA.md` but not yet auto-enforced.
+- **`properties` column** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
+  a free-form, type-specific property bag that absorbs the former `description`,
+  `vendor`, `part_number`, and `notes` columns.
 
 ### Changed
 
-- **Root CSVs are header-only starters** — no seed rows to delete on fork; the
-  illustrative example now lives under `template/` (a read-only worked example),
-  with every column and format documented in `docs/SCHEMA.md`.
+- **`components` / `properties` cell encoding defined** ([#11](https://github.com/vig-os/part-registry/issues/11)) —
+  both structured fields are now JSON inside a single CSV cell: `components` a
+  JSON array of IDs, `properties` a JSON object. The cells are double-quoted per
+  RFC-4180 (inner `"` doubled); empty stays the empty string. Documented in
+  `docs/SCHEMA.md`, demonstrated in the worked-example rows, and reflected in the
+  `record.yml` request form.
+- **BREAKING: `registry.csv` columns re-shuffled** ([#8](https://github.com/vig-os/part-registry/issues/8))
+  into a more logical order (`id, status, minted_at, minted_by, bound_at,
+  bound_by, labeled, location, type, components, properties, last_edited_at,
+  last_edited_by`); 16 → 13 columns. Forks must re-map their rows.
+
+### Removed
+
+- **BREAKING: `registry.csv` `batch` column** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
+  low value and recoverable from `minted_at` / the print log.
+- **BREAKING: `registry.csv` `description` / `vendor` / `part_number` / `notes`
+  columns** ([#8](https://github.com/vig-os/part-registry/issues/8)) — folded into
+  the new `properties` field.
+- **BREAKING: `print_log.csv` `batch_label` column** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
+  orphaned by the registry `batch` removal; 9 → 8 columns.
+- **BREAKING: `print_log.csv` `output_mode` and `copies` columns** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
+  print-job mechanics with no audit value; the printed label is reproducible from
+  `layout` / `size_mm` / `extra`. 8 → 6 columns.
 
 ## [0.1.0] - 2026-06-11
 

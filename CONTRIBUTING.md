@@ -10,12 +10,13 @@ work flows through `dev`. See [*Branching model*](#branching-model).
 This is a GitHub **template** — generate your own registry with *Use this
 template*, then make it yours (one time):
 
-1. **Start minting into the empty CSVs.** [`registry.csv`](registry.csv) and
-   [`print_log.csv`](print_log.csv) ship header-only — your data goes here.
-   [`docs/SCHEMA.md`](docs/SCHEMA.md) documents every column and its format, and
-   [`template/registry.csv`](template/registry.csv) /
-   [`template/print_log.csv`](template/print_log.csv) are worked examples to read
-   (part of the read-only upstream mirror — see step 5; don't edit them).
+1. **Delete the seed rows** in [`registry.csv`](registry.csv) and
+   [`print_log.csv`](print_log.csv) — they are an illustrative worked example.
+   Keep the header row; your data goes underneath.
+   [`docs/SCHEMA.md`](docs/SCHEMA.md) documents every column and its format, and a
+   read-only copy of the example is mirrored under
+   [`template/`](template/) (the upstream contract mirror — see step 5; don't
+   edit it).
 2. **Create the workflow labels** so the issue forms can apply them: `record`,
    `feature`, `chore` (plus `schema-change`, which structure PRs carry). `bug`
    ships with every repo. Missing labels don't block issue creation — the label
@@ -129,7 +130,7 @@ Follows [Conventional Commits](https://www.conventionalcommits.org/), adapted:
       `ci`, `refactor`. Pairs with the `schema` / `docs` / `repo` / `templates`
       scopes.
   - Scopes: `registry`, `print-log`, `schema`, `docs`, `repo`, `templates`.
-  - Examples: `record(registry): bind 3 sensors in batch B-2026-06-08`,
+  - Examples: `record(registry): bind 3 sensors on loop-A`,
     `record(print-log): append label print for 23456789ABCDEF`,
     `feat(schema): add labeled column`.
 - **Branches** — the prefix is the branch type, **not** the commit type

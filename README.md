@@ -7,8 +7,8 @@ it stays usable, diffable, and permanent — even without any app.
 
 This is a **GitHub template repository**. Fork it (Use this template) to host
 your own registry, then run the one-time
-[Fork setup](CONTRIBUTING.md#fork-setup) (create labels, protect `main`, repoint
-the schema link, enable template sync). Once enabled, the
+[Fork setup](CONTRIBUTING.md#fork-setup) (delete the seed rows, create labels,
+protect `main`, repoint the schema link, enable template sync). Once enabled, the
 [`template-sync`](.github/workflows/template-sync.yml) workflow keeps your
 instance current by opening a PR whenever upstream cuts a new release — refreshing
 the upstream contract mirror and templates, and flagging schema changes for you
@@ -19,15 +19,16 @@ separately at `vig-os/part-registry-app` (in progress) and is optional.
 
 | File | Purpose |
 |------|---------|
-| [`registry.csv`](registry.csv) | Canonical part records, sorted by `id`. Header-only until you mint. |
+| [`registry.csv`](registry.csv) | Canonical part records, sorted by `id`. Ships with a worked example; delete on fork. |
 | [`print_log.csv`](print_log.csv) | Append-only label-print audit trail. |
 | [`docs/SCHEMA.md`](docs/SCHEMA.md) | Hand-written field/format/lifecycle reference. |
 | [`template/`](template/) | Read-only mirror of the upstream contract — schema, worked example CSVs, README, changelog — that the sync tracks. |
 | `.github/` | Issue forms, PR templates, and the `template-sync` workflow. |
 
-Your `registry.csv` / `print_log.csv` start empty (header only); every column and
-format is documented in [`docs/SCHEMA.md`](docs/SCHEMA.md), with a worked example
-under [`template/`](template/). Start minting your own.
+`registry.csv` / `print_log.csv` ship with illustrative example rows — delete
+them after forking (keep the header) and start minting your own. Every column and
+format is documented in [`docs/SCHEMA.md`](docs/SCHEMA.md), with a read-only copy
+of the example mirrored under [`template/`](template/).
 
 ## Data model
 
