@@ -136,9 +136,9 @@ jobs:
     steps:
       - name: Generate Commit App token
         id: commit_app_token
-        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
         with:
-          app-id: ${{ secrets.COMMIT_APP_ID }}
+          client-id: ${{ secrets.COMMIT_APP_CLIENT_ID }}
           private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
 
       - name: Checkout release branch
@@ -168,7 +168,7 @@ jobs:
           sed -i -E "s|^\*\*Schema version:\*\* .*|**Schema version:** ${VERSION}|" docs/SCHEMA.md
           grep -qE "^\*\*Schema version:\*\* ${VERSION}$" docs/SCHEMA.md \
             || { echo "ERROR: schema version stamp not updated in docs/SCHEMA.md"; exit 1; }
-          printf '%s\n' "$VERSION" > .github/.template-sync-version
+          printf '%s\n' "$VERSION" > template/.github/.template-sync-version
 
       - name: Refresh upstream contract mirror (template/)
         run: |
@@ -191,7 +191,7 @@ jobs:
 
             Set release date ${{ needs.validate.outputs.release_date }}, bump the
             schema version stamp and .template-sync-version, and refresh template/.
-          FILE_PATHS: CHANGELOG.md,docs/SCHEMA.md,.github/.template-sync-version,template/SCHEMA.md,template/README.md,template/CHANGELOG.md,template/registry.csv,template/print_log.csv
+          FILE_PATHS: CHANGELOG.md,docs/SCHEMA.md,template/.github/.template-sync-version,template/SCHEMA.md,template/README.md,template/CHANGELOG.md,template/registry.csv,template/print_log.csv
 
       - name: Create and push tag at the finalized commit
         env:

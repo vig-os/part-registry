@@ -15,25 +15,52 @@ template*, then make it yours (one time):
    Keep the header row; your data goes underneath.
    [`docs/SCHEMA.md`](docs/SCHEMA.md) documents every column and its format, and a
    read-only copy of the example is mirrored under
-   [`template/`](template/) (the upstream contract mirror — see step 5; don't
+   [`template/`](template/) (the upstream contract mirror — see step 6; don't
    edit it).
-2. **Create the workflow labels** so the issue forms can apply them: `record`,
-   `feature`, `chore` (plus `schema-change`, which structure PRs carry). `bug`
-   ships with every repo. Missing labels don't block issue creation — the label
-   is just silently dropped.
-3. **Protect `main`**: require a PR + review before merge. A fork keeps **only
-   `main`** (record updates branch off it and PR straight back) — there is no
-   `dev`/`release` cycle unless you also version your own schema.
-4. **Repoint the schema link** in
+2. **Install the fork-facing machinery.** Generating from the template copies the
+   *upstream's own* `.github/`, which is aimed at developing the template. A fork
+   doesn't develop the template, so install the fork-facing set shipped under
+   [`template/.github/`](template/.github/) — the `template-sync` workflow, its
+   allowlist and version marker, the record/bug/chore forms, `registry-update.md`,
+   a fork-scoped `schema-change.md`, a `chore.md` for repo-plumbing work, a
+   dispatcher `pull_request_template.md`, and a default `config.yml` — and remove
+   the upstream-only development machinery:
+
+   ```sh
+   # install the fork-facing machinery into the live .github/
+   cp -r template/.github/. .github/
+   # remove the upstream-only development machinery
+   rm -f .github/ISSUE_TEMPLATE/feature.yml \
+         .github/PULL_REQUEST_TEMPLATE/release.md \
+         .github/workflows/prepare-release.yml \
+         .github/workflows/finalize-release.yml \
+         .github/workflows/sync-main-to-dev.yml
+   ```
+
+   (Do this before the next step — the copy installs the default `config.yml`.
+   This is the one-time bootstrap that activates the sync; thereafter
+   **template-sync** keeps the mapped machinery current for you. `config.yml` is
+   shipped as a default but is **never** overwritten by sync, and
+   `.template-sync-version` is written by the workflow — both are yours.)
+3. **Repoint the schema link** in
    [`.github/ISSUE_TEMPLATE/config.yml`](.github/ISSUE_TEMPLATE/config.yml): the
    *Schema reference* contact link is an absolute URL to the upstream repo —
    change it to your fork's own `docs/SCHEMA.md`. (The *App bugs* link can stay;
    the viewer/editor app is a shared upstream project, not forked.)
-5. **Enable template sync** (optional, recommended). The
+4. **Create the workflow labels** so the issue forms can apply them: `record`,
+   `chore` (plus `schema-change`, which a schema PR carries). `bug` ships with
+   every repo. (A fork's synced forms are record/bug/chore — no `feature`; that
+   one is upstream-only.) Missing labels don't block issue creation — the label
+   is just silently dropped.
+5. **Protect `main`**: require a PR + review before merge. A fork keeps **only
+   `main`** (record updates branch off it and PR straight back) — there is no
+   `dev`/`release` cycle unless you also version your own schema.
+6. **Enable template sync** (optional, recommended). The
    [`template-sync`](.github/workflows/template-sync.yml) workflow watches for
    new upstream *releases* and opens a PR that refreshes the upstream **contract
-   mirror** under [`template/`](template/) and the functional machinery (issue/PR
-   templates, workflows), strictly per
+   mirror** under [`template/`](template/), the shared sync plumbing, and the
+   fork-facing issue/PR templates — which it **maps** from `template/.github/`
+   into your live `.github/`, strictly per
    [`.github/.template-sync-paths`](.github/.template-sync-paths). It never
    touches your records, your [`docs/SCHEMA.md`](docs/SCHEMA.md), README,
    CHANGELOG, or your repointed `config.yml`.
@@ -42,14 +69,14 @@ template*, then make it yours (one time):
      breaking* schema change; you then update your own `docs/SCHEMA.md` and
      `registry.csv` on your own terms.
    - It commits through the org GitHub Apps so commits stay **signed**, so it
-     needs the `COMMIT_APP_ID` / `COMMIT_APP_PRIVATE_KEY` and `RELEASE_APP_ID` /
-     `RELEASE_APP_PRIVATE_KEY` secrets: instances inside the `vig-os` org inherit
-     them automatically; external forks install equivalent Apps or just delete
-     the workflow.
-   - **Existing** instances (generated before this shipped) copy in
-     `.github/workflows/template-sync.yml`, `.github/.template-sync-paths`,
-     `.github/.template-sync-version`, and the `template/` directory once by hand
-     — template inheritance only applies at generation time.
+     needs the `COMMIT_APP_CLIENT_ID` / `COMMIT_APP_PRIVATE_KEY` and
+     `RELEASE_APP_CLIENT_ID` / `RELEASE_APP_PRIVATE_KEY` secrets: instances
+     inside the `vig-os` org inherit them automatically; external forks install
+     equivalent Apps or just delete the workflow.
+   - **Existing** instances (generated before this shipped) run the step-2
+     bootstrap once by hand — copy `template/.github/.` into `.github/` and pull
+     in the `template/` directory — since template inheritance only applies at
+     generation time.
 
 Then start minting.
 
@@ -78,17 +105,21 @@ flowchart LR
 
 ## Change types
 
-Two axes. *What* you touch (data vs structure) picks the PR template and its
-invariant checklist; *intent* (feature/bug/chore) picks the issue form.
+Two axes. *What* you touch (the **artifact**) picks the PR template and its
+checklist; *intent* (feature/bug/chore) picks the issue form. There are three
+artifacts: records, the schema (data shape), and repo plumbing.
 
 | What changes | Issue form | PR template | PR label |
 |--------------|-----------|-------------|----------|
 | Records | Registry change request | `registry-update.md` | `record` |
-| Structure (schema/docs/templates/tooling) | Feature / Bug / Chore | `schema-change.md` | `schema-change` |
+| Schema (data shape / `docs/SCHEMA.md`) | Feature / Bug / Chore | `schema-change.md` | `schema-change` |
+| Repo plumbing (CI, deps, docs, templates, config) | Chore | `chore.md` | `chore` |
 
-A feature, a bug fix, and a chore on the schema all use `schema-change.md` — they
-share the same checklist. The issue form additionally tags intent with
-`feature` / `bug` / `chore`.
+A feature, a bug fix, and a chore **on the schema** all use `schema-change.md` —
+they share the same invariant checklist. A chore that touches neither the records
+nor the data shape (an action-pin bump, a README edit, a CI tweak) uses
+`chore.md` instead, which carries no schema checklist. The issue form additionally
+tags intent with `feature` / `bug` / `chore`.
 
 The issue forms apply their label automatically. PR templates *suggest* the
 artifact label (apply it manually, since there is no labeling automation in this
@@ -149,11 +180,11 @@ development axis (schema, docs, templates, tooling). It uses the
 [Keep a Changelog](https://keepachangelog.com/) format with an `## Unreleased`
 section.
 
-- **Structure PRs** (`schema-change.md`, targeting `dev`): add an entry under
-  `## Unreleased` using the right category (`Added` / `Changed` / `Deprecated` /
-  `Removed` / `Fixed` / `Security`) and paste it into the PR's *Changelog Entry*
-  section. Skip only pure-internal chores with no user-visible or workflow
-  impact (note "No changelog needed" and why). Format:
+- **Structure PRs** (`schema-change.md` and `chore.md`, targeting `dev`): add an
+  entry under `## Unreleased` using the right category (`Added` / `Changed` /
+  `Deprecated` / `Removed` / `Fixed` / `Security`) and paste it into the PR's
+  *Changelog Entry* section. Skip only pure-internal chores with no user-visible or
+  workflow impact (note "No changelog needed" and why). Format:
   `- **Bold title** ([#issue](url))` with indented detail sub-bullets.
 - **Record PRs** (`registry-update.md`, targeting `main`) are **exempt** — the
   CSVs and their git history are the data SSoT and `print_log.csv` is already an
@@ -169,13 +200,18 @@ The full release cycle — `dev → release/X.Y.Z → main`, SemVer-for-schema, 
 [`docs/RELEASE_CYCLE.md`](docs/RELEASE_CYCLE.md). In short: a release freezes the
 `## Unreleased` changelog into a dated `## [X.Y.Z]`, regenerates the
 [`template/`](template/) contract mirror and the schema version stamp /
-[`.github/.template-sync-version`](.github/.template-sync-version) from the live
-files, tags `X.Y.Z`, and ships a draft GitHub Release a human publishes.
+[`template/.github/.template-sync-version`](template/.github/.template-sync-version)
+from the live files, tags `X.Y.Z`, and ships a draft GitHub Release a human
+publishes.
 
-`template/` is a generated snapshot (like a lockfile): the live files are
-authored; `template/` is derived — never hand-edit it. Forks' `template-sync`
-reads the tag's `template/` to detect what changed since their last sync, so a
-stale mirror would mislead every downstream.
+The `template/` **contract mirror** (`SCHEMA.md`, `README.md`, `CHANGELOG.md`,
+`registry.csv`, `print_log.csv`) is a generated snapshot (like a lockfile): the
+live files are authored; the mirror is derived — never hand-edit it. Forks'
+`template-sync` reads the tag's mirror to detect what changed since their last
+sync, so a stale mirror would mislead every downstream. The **fork-facing
+templates** under [`template/.github/`](template/.github/) are the exception —
+they are hand-authored source (the templates forks actually run), not generated,
+and are edited directly through the normal structure-change flow.
 
 ## Data invariants
 

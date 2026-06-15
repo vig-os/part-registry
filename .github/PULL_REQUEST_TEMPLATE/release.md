@@ -31,7 +31,7 @@ Write "None — no breaking change" if so. -->
 ## Checklist
 
 - [ ] `## Unreleased` promoted to `## [X.Y.Z] - <date|TBD>` (run via `prepare-release.yml`).
-- [ ] `docs/SCHEMA.md` **Schema version** stamp and `.github/.template-sync-version` bumped to `X.Y.Z`.
+- [ ] `docs/SCHEMA.md` **Schema version** stamp and `template/.github/.template-sync-version` bumped to `X.Y.Z`.
 - [ ] [`template/`](../../template/) contract mirror refreshed from the live files.
 - [ ] Breaking changes (if any) documented with fork-migration notes above and in `CHANGELOG.md`.
 - [ ] Data invariants unaffected (a release touches structure only, never records).
