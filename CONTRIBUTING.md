@@ -129,7 +129,7 @@ Follows [Conventional Commits](https://www.conventionalcommits.org/), adapted:
       `ci`, `refactor`. Pairs with the `schema` / `docs` / `repo` / `templates`
       scopes.
   - Scopes: `registry`, `print-log`, `schema`, `docs`, `repo`, `templates`.
-  - Examples: `record(registry): bind 3 sensors in batch B-2026-06-08`,
+  - Examples: `record(registry): bind 3 sensors on loop-A`,
     `record(print-log): append label print for 23456789ABCDEF`,
     `feat(schema): add labeled column`.
 - **Branches** — the prefix is the branch type, **not** the commit type

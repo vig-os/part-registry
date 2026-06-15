@@ -20,8 +20,8 @@ worked examples (read-only; part of the upstream mirror).
 
 | File | What it is |
 |------|-----------|
-| `registry.csv` | Canonical part records, **sorted by `id` ascending**. 16 columns. Header-only in the template. |
-| `print_log.csv` | **Append-only** label-print audit trail. 9 columns. Header-only in the template. |
+| `registry.csv` | Canonical part records, **sorted by `id` ascending**. 13 columns. Header-only in the template. |
+| `print_log.csv` | **Append-only** label-print audit trail. 8 columns. Header-only in the template. |
 | `docs/SCHEMA.md` | Hand-maintained field/format/lifecycle reference — the authority for all rules below. A fork may trim it to the subset it uses. |
 | `template/` | **Upstream reference set** — pristine, machine-managed copies of `SCHEMA.md`, `README.md`, `CHANGELOG.md` (verbatim) plus worked-example `registry.csv` / `print_log.csv` (rows; their headers are the schema's column fingerprint). Forks **never hand-edit** it; the `template-sync` workflow overwrites it from each release, and a change to `template/SCHEMA.md` is the breaking-change signal. In upstream it is a generated snapshot, refreshed at release time (see `CONTRIBUTING.md` → *Releasing*). |
 | `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE/` | Issue forms (registry change request + feature/bug/chore) and the two PR templates. |
@@ -50,12 +50,16 @@ repo — verify them by hand:
 3. Allowed status transitions only: `unbound -> bound`, `bound -> bound`
    (rebind), `bound -> retired`, `* -> void`. **No back-transitions.**
 4. Per-status field rules:
-   - `unbound` — no `bound_at`/`bound_by`/`type`/`location`; `labeled=no`.
+   - `unbound` — no `bound_at`/`bound_by`/`type`/`location`/`components`/`properties`; `labeled=no`.
    - `bound` — MUST have `bound_at` + `bound_by`; `labeled` is `yes`/`no`.
-   - `retired` — retains historical binding fields; record reason in `notes`.
-   - `void` — no `bound_at`/`bound_by`; `labeled=no`; record reason in `notes`.
+   - `retired` — retains historical binding fields; record reason in `properties`.
+   - `void` — no `bound_at`/`bound_by`; `labeled=no`; record reason in `properties`.
 5. `labeled=yes` only on `bound` or `retired` rows.
-6. New columns are **appended at the end** (forward-compatible); never reorder.
+6. New columns are normally **appended at the end** (forward-compatible) and the
+   order is otherwise stable — a deliberate reorder is reserved for breaking
+   schema redesigns at a release boundary (e.g. the v0.2 column re-shuffle).
+7. `components` references are valid: each listed ID exists, with no
+   self-reference or cycles (documented in `docs/SCHEMA.md`; not auto-enforced).
 
 The `registry-update.md` PR template encodes these as a checklist — use it as
 your verification list when changing records.
