@@ -10,8 +10,12 @@ work flows through `dev`. See [*Branching model*](#branching-model).
 This is a GitHub **template** — generate your own registry with *Use this
 template*, then make it yours (one time):
 
-1. **Delete the seed rows** in [`registry.csv`](registry.csv) and
-   [`print_log.csv`](print_log.csv) — they are illustrative. Keep the header row.
+1. **Start minting into the empty CSVs.** [`registry.csv`](registry.csv) and
+   [`print_log.csv`](print_log.csv) ship header-only — your data goes here.
+   [`docs/SCHEMA.md`](docs/SCHEMA.md) documents every column and its format, and
+   [`template/registry.csv`](template/registry.csv) /
+   [`template/print_log.csv`](template/print_log.csv) are worked examples to read
+   (part of the read-only upstream mirror — see step 5; don't edit them).
 2. **Create the workflow labels** so the issue forms can apply them: `record`,
    `feature`, `chore` (plus `schema-change`, which structure PRs carry). `bug`
    ships with every repo. Missing labels don't block issue creation — the label
@@ -24,6 +28,27 @@ template*, then make it yours (one time):
    *Schema reference* contact link is an absolute URL to the upstream repo —
    change it to your fork's own `docs/SCHEMA.md`. (The *App bugs* link can stay;
    the viewer/editor app is a shared upstream project, not forked.)
+5. **Enable template sync** (optional, recommended). The
+   [`template-sync`](.github/workflows/template-sync.yml) workflow watches for
+   new upstream *releases* and opens a PR that refreshes the upstream **contract
+   mirror** under [`template/`](template/) and the functional machinery (issue/PR
+   templates, workflows), strictly per
+   [`.github/.template-sync-paths`](.github/.template-sync-paths). It never
+   touches your records, your [`docs/SCHEMA.md`](docs/SCHEMA.md), README,
+   CHANGELOG, or your repointed `config.yml`.
+   - **`template/` is a read-only mirror** — don't hand-edit it. When the sync PR
+     changes [`template/SCHEMA.md`](template/SCHEMA.md) it flags a *potentially
+     breaking* schema change; you then update your own `docs/SCHEMA.md` and
+     `registry.csv` on your own terms.
+   - It commits through the org GitHub Apps so commits stay **signed**, so it
+     needs the `COMMIT_APP_ID` / `COMMIT_APP_PRIVATE_KEY` and `RELEASE_APP_ID` /
+     `RELEASE_APP_PRIVATE_KEY` secrets: instances inside the `vig-os` org inherit
+     them automatically; external forks install equivalent Apps or just delete
+     the workflow.
+   - **Existing** instances (generated before this shipped) copy in
+     `.github/workflows/template-sync.yml`, `.github/.template-sync-paths`,
+     `.github/.template-sync-version`, and the `template/` directory once by hand
+     — template inheritance only applies at generation time.
 
 Then start minting.
 
@@ -135,6 +160,24 @@ section.
 - **On `release/X.Y.Z`** the accumulated `## Unreleased` entries are promoted to
   a dated `## [X.Y.Z]` section; don't add new `## Unreleased` items there.
 - Never edit entries below `## Unreleased` (released, dated sections).
+
+## Releasing (upstream only)
+
+On a `release/X.Y.Z` branch, before tagging, **regenerate the upstream contract
+mirror** so the tag forks consume matches the live source of truth:
+
+1. Promote the `## Unreleased` changelog entries to `## [X.Y.Z]` (above).
+2. Refresh [`template/`](template/) from the live files — copy `docs/SCHEMA.md`,
+   `README.md`, `CHANGELOG.md`, and the canonical example
+   `registry.csv` / `print_log.csv` into `template/`. `template/` is a generated
+   snapshot (like a lockfile): the live files are authored; `template/` is
+   derived. Never hand-edit `template/` independently.
+3. Set [`.github/.template-sync-version`](.github/.template-sync-version) to
+   `X.Y.Z` — a fresh fork generated from this tag is, by definition, in sync with
+   it.
+
+The `template-sync` workflow in forks reads this tag's `template/` to detect what
+changed since their last sync, so a stale mirror would mislead every downstream.
 
 ## Data invariants
 
