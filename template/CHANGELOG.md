@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3](https://github.com/vig-os/part-registry/releases/tag/0.2.3) - 2026-06-15
+
+### Fixed
+
+- **`template-sync.yml` records a silent partial sync when required machinery is
+  missing** ([#26](https://github.com/vig-os/part-registry/issues/26)) — the
+  *Pull allowlisted paths* step treated every absent allowlisted source as a
+  non-fatal `::notice::` and bumped `.template-sync-version` unconditionally, so
+  a run that failed to install the fork-facing machinery (workflow, allowlist,
+  issue/PR templates) still went green and marked the instance up-to-date,
+  stranding it. A missing **mapped** (`src -> dest`) machinery source is now
+  fatal — the job aborts before the version bump, leaving the marker untouched
+  so the next run retries. Missing **identity** contract-mirror sources stay a
+  tolerated notice.
+
 ## [0.2.2](https://github.com/vig-os/part-registry/releases/tag/0.2.2) - 2026-06-15
 
 ### Fixed

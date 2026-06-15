@@ -135,27 +135,42 @@ jobs:
           #                 back to the same path.
           #   src -> dest   mapped — fork-facing templates authored under
           #                 template/.github/, written into the live .github/.
-          # Missing sources in the tag are skipped, not deleted locally.
+          # A missing identity source is skipped (tolerated, never deleted
+          # locally — a fork may have trimmed a column it never adopted). A
+          # missing mapped source is required machinery: it is FATAL (see the
+          # abort below), so we never bump the version marker on a partial sync.
+          missing_required=()
           for line in "${PATHS[@]}"; do
             case "$line" in ''|\#*) continue ;; esac
             if [[ "$line" == *" -> "* ]]; then
-              src="${line%% -> *}"; dest="${line##* -> }"
+              mapped=true; src="${line%% -> *}"; dest="${line##* -> }"
             else
-              src="$line"; dest="$line"
+              mapped=false; src="$line"; dest="$line"
             fi
             # Trim surrounding whitespace.
             src="${src#"${src%%[![:space:]]*}"}"; src="${src%"${src##*[![:space:]]}"}"
             dest="${dest#"${dest%%[![:space:]]*}"}"; dest="${dest%"${dest##*[![:space:]]}"}"
-            if [ "$src" = "$dest" ]; then
+            if [ "$mapped" = false ]; then
               git checkout "${TAG}" -- "$src" 2>/dev/null \
-                || echo "::notice::'${src}' not present in ${TAG}; skipped."
+                || echo "::notice::'${src}' not present in ${TAG}; skipped (contract mirror)."
             elif git cat-file -e "${TAG}:${src}" 2>/dev/null; then
               mkdir -p "$(dirname "$dest")"
               git show "${TAG}:${src}" > "$dest"
             else
-              echo "::notice::'${src}' not present in ${TAG}; skipped."
+              # Required machinery absent from the tag: the release moved/dropped
+              # it, or this instance's allowlist is stale. Fail loudly.
+              echo "::error::required machinery '${src}' not present in ${TAG}."
+              missing_required+=("$src")
             fi
           done
+
+          # Refuse to record a partial sync. Aborting here leaves
+          # .template-sync-version untouched, so the next run retries instead of
+          # treating the instance as already up-to-date.
+          if [ "${#missing_required[@]}" -ne 0 ]; then
+            echo "::error::${#missing_required[@]} required machinery path(s) missing from ${TAG}; aborting before the version bump to avoid a silent partial sync."
+            exit 1
+          fi
 
           # We own the marker — set it to the tag we are syncing to.
           printf '%s\n' "${TAG}" > .github/.template-sync-version
