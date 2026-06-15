@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+### Security
+
+## [0.2.3] - TBD
+
+### Fixed
+
 - **`template-sync.yml` records a silent partial sync when required machinery is
   missing** ([#26](https://github.com/vig-os/part-registry/issues/26)) — the
   *Pull allowlisted paths* step treated every absent allowlisted source as a
@@ -27,8 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fatal — the job aborts before the version bump, leaving the marker untouched
   so the next run retries. Missing **identity** contract-mirror sources stay a
   tolerated notice.
-
-### Security
 
 ## [0.2.2](https://github.com/vig-os/part-registry/releases/tag/0.2.2) - 2026-06-15
 
