@@ -1,5 +1,11 @@
 # Schema
 
+**Schema version:** 0.2.0
+
+<!-- The version this document describes. The release cycle bumps it (and mirrors
+it into `.github/.template-sync-version`) when a release is cut — see
+docs/RELEASE_CYCLE.md. A fork reads this to tell which schema release it tracks. -->
+
 Hand-maintained documentation of the data files in this registry. There is
 intentionally **no machine-readable contract or automated validation in this
 repo yet** — those live elsewhere and will be wired in later (see the repo
@@ -18,6 +24,11 @@ and route structural edits through the Feature / Bug / Chore issue forms +
   a GitHub user by construction.
 - CSV files use a header row, `,` delimiter, UTF-8, and `\n` line endings.
   Empty fields are the empty string (no `NULL`).
+- **Quoting** follows RFC-4180: a cell is double-quoted only when its value
+  embeds a `,`, `"`, or newline — in practice the JSON-encoded `components` /
+  `properties` cells (see [Cell encoding](#cell-encoding)). Inner `"` are doubled
+  (`""`). Every other cell stays unquoted. An empty structured field is the empty
+  string, never `[]` or `{}`.
 
 ## `registry.csv`
 
@@ -32,43 +43,82 @@ A sticker is only applied to a part that is/was bound, so `labeled=yes` requires
 superseded — history is preserved) and `void` (the ID never became a valid
 in-service part: mis-mint, scrapped on arrival, mistake).
 
-Column order (16 columns):
+Column order (13 columns):
 
 | # | Column | Type / format | Notes |
 |---|--------|---------------|-------|
 | 1 | `id` | id (14-char) | Canonical ID. Unique across the file. |
 | 2 | `status` | enum | `unbound` \| `bound` \| `retired` \| `void`. |
 | 3 | `minted_at` | datetime | When the ID was minted. |
-| 4 | `batch` | string | Mint batch label, e.g. `B-2026-06-01`. |
-| 5 | `bound_at` | datetime | When bound to a part. Empty unless `bound`. |
-| 6 | `type` | string | Part type, e.g. `PT100`. |
-| 7 | `description` | string | Free-text description. |
-| 8 | `vendor` | string | Supplier name. |
-| 9 | `part_number` | string | Vendor part number. |
-| 10 | `location` | string | Physical location / path. |
-| 11 | `notes` | string | Free-text notes. |
-| 12 | `minted_by` | actor | Who minted the ID. |
-| 13 | `bound_by` | actor | Who bound the part. Empty unless `bound`. |
-| 14 | `last_edited_at` | datetime | Last edit timestamp. |
-| 15 | `last_edited_by` | actor | Who last edited the row. |
-| 16 | `labeled` | enum | `yes` \| `no` — whether a physical sticker is on the part. `yes` only valid when `bound` or `retired`. |
+| 4 | `minted_by` | actor | Who minted the ID. |
+| 5 | `bound_at` | datetime | When bound to a part. Set on `bound`/`retired`; empty on `unbound`/`void`. |
+| 6 | `bound_by` | actor | Who bound the part. Set on `bound`/`retired`; empty on `unbound`/`void`. |
+| 7 | `labeled` | enum | `yes` \| `no` — whether a physical sticker is on the part. `yes` only valid when `bound` or `retired`. |
+| 8 | `location` | string | Physical location / path. |
+| 9 | `type` | string | Part type, e.g. `PT100`. Drives the expected `properties` schema (later). |
+| 10 | `components` | JSON array (CSV-quoted) | Direct subcomponent IDs when this part is an assembly; empty string otherwise. See [Cell encoding](#cell-encoding) and [Component referential integrity](#component-referential-integrity). |
+| 11 | `properties` | JSON object (CSV-quoted) | Type-specific attributes — absorbs the former `description`, `vendor`, `part_number`, `notes`. Empty string when none. See [Cell encoding](#cell-encoding). |
+| 12 | `last_edited_at` | datetime | Last edit timestamp. |
+| 13 | `last_edited_by` | actor | Who last edited the row. |
+
+### Cell encoding
+
+`components` and `properties` are structured fields encoded as **JSON inside a
+single CSV cell**:
+
+- **`components`** — a JSON **array** of subcomponent IDs, e.g.
+  `["23456789ABCDEF","2345ABCDEFGHJK"]`. Empty assemblies use the empty string,
+  not `[]`.
+- **`properties`** — a JSON **object** mapping keys to values, e.g.
+  `{"vendor":"Acme","part_number":"PT100-A"}`. No attributes uses the empty
+  string, not `{}`.
+
+Because JSON embeds `,` and `"`, these cells are **double-quoted per RFC-4180**,
+with inner `"` doubled. As they appear in the raw CSV:
+
+```
+"[""23456789ABCDEF"",""2345ABCDEFGHJK""]"
+"{""vendor"":""Acme"",""part_number"":""PT100-A""}"
+```
+
+Any compliant CSV reader (Python `csv`, pandas) decodes these transparently; a
+naive line/`split(',')` reader does not.
+
+**`properties` keys.** Keys are free-form strings, but the recommended set
+absorbs the columns folded in by the v0.2 redesign: `description`, `vendor`,
+`part_number`, `notes`. `retired` and `void` rows record their reason under a
+`reason` key (see [Per-status field rules](#per-status-field-rules)). The `type`
+field drives the *expected* key set for a part; a formal per-type `properties`
+schema is a future refinement and is not enforced here.
+
+### Component referential integrity
+
+When `components` is populated, these rules apply (documented here; **not
+enforced** in this repo yet — validation tooling will enforce them later):
+
+- **Exists** — every listed ID MUST exist as an `id` in `registry.csv`.
+- **No self-reference** — a part MUST NOT list its own `id`.
+- **No cycles** — composition is acyclic; a part MUST NOT be its own ancestor.
+- **Bound subcomponents** — each listed component SHOULD be a `bound` or
+  `retired` part (a real physical part), not `unbound`/`void`.
 
 ### Per-status field rules
 
 - **`unbound`** — minted but not attached. Must NOT carry `bound_at`,
-  `bound_by`, `type`, or `location`. `labeled` MUST be `no` (a sticker is only
-  applied once a part is bound).
+  `bound_by`, `type`, `location`, `components`, or `properties`. `labeled` MUST be
+  `no` (a sticker is only applied once a part is bound).
 - **`bound`** — attached to a real part. MUST carry `bound_at` and `bound_by`;
-  should carry `type`/`description`/`location`. `labeled` is `yes` when a sticker
-  is physically on the part, or `no` when intentionally unlabeled (e.g. a
-  subcomponent, or a part that already carries its own printed ID).
+  should carry `type`/`location` and type-specific `properties`. `labeled` is
+  `yes` when a sticker is physically on the part, or `no` when intentionally
+  unlabeled (e.g. a subcomponent, or a part that already carries its own printed
+  ID).
 - **`retired`** — was bound and in service, now decommissioned or superseded.
   Retains the historical binding fields (`bound_at`, `bound_by`, `type`,
-  `description`, `location`); `labeled` may stay `yes` if the sticker is still on
-  the part. Record the reason in `notes`. Terminal.
+  `location`, `properties`); `labeled` may stay `yes` if the sticker is still on
+  the part. Record the reason in `properties`. Terminal.
 - **`void`** — the ID never became a valid in-service part (mis-mint, scrapped,
   mistake). MUST NOT carry `bound_at`/`bound_by`; `labeled` is `no`. Record the
-  reason in `notes`. Terminal.
+  reason in `properties`. Terminal.
 
 ### Allowed status transitions
 
@@ -89,6 +139,3 @@ Never edit or delete existing rows.
 | 4 | `layout` | string | Label layout, e.g. `horz` / `vert` / `flag`. |
 | 5 | `size_mm` | number | Short-side size in mm. |
 | 6 | `extra` | string | Layout-specific extra (e.g. cable OD). May be empty. |
-| 7 | `copies` | number | Number of copies printed. |
-| 8 | `output_mode` | string | e.g. `single` / `sheet` / `strip`. |
-| 9 | `batch_label` | string | Originating batch, if any. |

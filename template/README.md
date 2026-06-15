@@ -7,21 +7,28 @@ it stays usable, diffable, and permanent — even without any app.
 
 This is a **GitHub template repository**. Fork it (Use this template) to host
 your own registry, then run the one-time
-[Fork setup](CONTRIBUTING.md#fork-setup) (delete seed rows, create labels,
-protect `main`, repoint the schema link). The viewer/editor app lives separately
-at `vig-os/part-registry-app` (in progress) and is optional.
+[Fork setup](CONTRIBUTING.md#fork-setup) (delete the seed rows, create labels,
+protect `main`, repoint the schema link, enable template sync). Once enabled, the
+[`template-sync`](.github/workflows/template-sync.yml) workflow keeps your
+instance current by opening a PR whenever upstream cuts a new release — refreshing
+the upstream contract mirror and templates, and flagging schema changes for you
+to adopt, while leaving your records untouched. The viewer/editor app lives
+separately at `vig-os/part-registry-app` (in progress) and is optional.
 
 ## What's in here
 
 | File | Purpose |
 |------|---------|
-| [`registry.csv`](registry.csv) | Canonical part records, sorted by `id`. |
+| [`registry.csv`](registry.csv) | Canonical part records, sorted by `id`. Ships with a worked example; delete on fork. |
 | [`print_log.csv`](print_log.csv) | Append-only label-print audit trail. |
 | [`docs/SCHEMA.md`](docs/SCHEMA.md) | Hand-written field/format/lifecycle reference. |
-| `.github/` | Issue forms (registry change request + feature/bug/chore) and PR templates. |
+| [`template/`](template/) | Read-only mirror of the upstream contract — schema, worked example CSVs, README, changelog — that the sync tracks. |
+| `.github/` | Issue forms, PR templates, and the `template-sync` workflow. |
 
-The seeded rows are illustrative — delete them after forking and start minting
-your own.
+`registry.csv` / `print_log.csv` ship with illustrative example rows — delete
+them after forking (keep the header) and start minting your own. Every column and
+format is documented in [`docs/SCHEMA.md`](docs/SCHEMA.md), with a read-only copy
+of the example mirrored under [`template/`](template/).
 
 ## Data model
 
