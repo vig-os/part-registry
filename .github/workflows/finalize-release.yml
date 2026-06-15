@@ -1,0 +1,239 @@
+# Finalize Release
+#
+# Run after the draft release PR (release/X.Y.Z -> main) is reviewed and marked
+# ready. Stamps the date, refreshes the upstream contract mirror, tags, and
+# creates a DRAFT GitHub Release. A human then publishes the draft and merges
+# the PR (see docs/RELEASE_CYCLE.md, "Promote"); that merge to main triggers
+# sync-main-to-dev.yml.
+#
+#   1. validate (runner)    - PR is ready + approved, tag absent, CHANGELOG has
+#                             ## [X.Y.Z] - TBD; compute the release date.
+#   2. finalize (container) - set the date with `prepare-changelog finalize`,
+#                             bump the schema version stamp + .template-sync-version,
+#                             refresh template/, commit to the release branch,
+#                             tag X.Y.Z, create a draft GitHub Release.
+#
+# `prepare-changelog`/`retry`/`gh`/`git` run inside the devcontainer image (single
+# source); signed commits go through vig-os/commit-action. See prepare-release.yml.
+#
+# Trigger: manual workflow_dispatch (upstream only).
+
+name: Finalize Release
+
+on:  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semantic version to finalize (e.g., 0.2.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate:
+    name: Validate finalization
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      version: ${{ steps.vars.outputs.version }}
+      release_branch: ${{ steps.vars.outputs.release_branch }}
+      release_date: ${{ steps.vars.outputs.release_date }}
+      image_tag: ${{ steps.resolve_image.outputs.image_tag }}
+
+    steps:
+      - name: Validate and prepare variables
+        id: vars
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          VERSION="$INPUT_VERSION"
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "ERROR: Invalid version '$VERSION' (expected MAJOR.MINOR.PATCH)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "release_branch=release/$VERSION" >> "$GITHUB_OUTPUT"
+          echo "release_date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout release branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          ref: ${{ steps.vars.outputs.release_branch }}
+          fetch-depth: 0
+
+      - name: Resolve devcontainer image tag
+        id: resolve_image
+        run: |
+          set -euo pipefail
+          TAG="0.3.5"
+          if [ -f ".vig-os" ]; then
+            FROM_FILE=$(awk -F= '/^DEVCONTAINER_VERSION=/{gsub(/^[ \t"]+|[ \t"]+$/, "", $2); print $2; exit}' .vig-os || true)
+            [ -n "${FROM_FILE:-}" ] && TAG="$FROM_FILE"
+          fi
+          echo "image_tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Verify tag does not exist
+        env:
+          VERSION: ${{ steps.vars.outputs.version }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags --refs origin "refs/tags/$VERSION" > /dev/null 2>&1; then
+            echo "ERROR: Tag $VERSION already exists on remote"
+            exit 1
+          fi
+
+      - name: Verify CHANGELOG has the TBD entry
+        env:
+          VERSION: ${{ steps.vars.outputs.version }}
+        run: |
+          set -euo pipefail
+          if ! grep -qE "^## \[$VERSION\] - TBD$" CHANGELOG.md; then
+            echo "ERROR: '## [$VERSION] - TBD' not found in CHANGELOG.md on the release branch"
+            exit 1
+          fi
+
+      - name: Verify release PR is ready and approved
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: ${{ steps.vars.outputs.release_branch }}
+        run: |
+          set -euo pipefail
+          PR_JSON=$(gh pr list --head "$RELEASE_BRANCH" --base main --state open \
+            --json number,isDraft,reviewDecision --jq '.[0] // empty')
+          if [ -z "$PR_JSON" ]; then
+            echo "ERROR: No open release PR ($RELEASE_BRANCH -> main)"
+            exit 1
+          fi
+          IS_DRAFT=$(echo "$PR_JSON" | jq -r '.isDraft')
+          DECISION=$(echo "$PR_JSON" | jq -r '.reviewDecision')
+          if [ "$IS_DRAFT" != "false" ]; then
+            echo "ERROR: Release PR is still a draft — mark it ready first"
+            exit 1
+          fi
+          if [ "$DECISION" != "APPROVED" ]; then
+            echo "ERROR: Release PR is not approved (reviewDecision=$DECISION)"
+            exit 1
+          fi
+
+  finalize:
+    name: Finalize and tag
+    needs: validate
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vig-os/devcontainer:${{ needs.validate.outputs.image_tag }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Generate Commit App token
+        id: commit_app_token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        with:
+          app-id: ${{ secrets.COMMIT_APP_ID }}
+          private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
+
+      - name: Checkout release branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          ref: ${{ needs.validate.outputs.release_branch }}
+          fetch-depth: 0
+          token: ${{ steps.commit_app_token.outputs.token }}
+
+      - name: Fix git safe.directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Finalize CHANGELOG date
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          RELEASE_DATE: ${{ needs.validate.outputs.release_date }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          prepare-changelog finalize "$VERSION" "$RELEASE_DATE" CHANGELOG.md
+
+      - name: Bump schema version stamp and sync version
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          sed -i -E "s|^\*\*Schema version:\*\* .*|**Schema version:** ${VERSION}|" docs/SCHEMA.md
+          grep -qE "^\*\*Schema version:\*\* ${VERSION}$" docs/SCHEMA.md \
+            || { echo "ERROR: schema version stamp not updated in docs/SCHEMA.md"; exit 1; }
+          printf '%s\n' "$VERSION" > .github/.template-sync-version
+
+      - name: Refresh upstream contract mirror (template/)
+        run: |
+          set -euo pipefail
+          cp docs/SCHEMA.md   template/SCHEMA.md
+          cp README.md        template/README.md
+          cp CHANGELOG.md     template/CHANGELOG.md
+          cp registry.csv     template/registry.csv
+          cp print_log.csv    template/print_log.csv
+
+      - name: Commit finalization to release branch via API
+        uses: vig-os/commit-action@1bc004353d08d9332a0cb54920b148256220c8e0  # v0.2.0
+        env:
+          GH_TOKEN: ${{ steps.commit_app_token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: refs/heads/${{ needs.validate.outputs.release_branch }}
+          MAX_ATTEMPTS: "3"
+          COMMIT_MESSAGE: |-
+            chore(repo): finalize release ${{ needs.validate.outputs.version }}
+
+            Set release date ${{ needs.validate.outputs.release_date }}, bump the
+            schema version stamp and .template-sync-version, and refresh template/.
+          FILE_PATHS: CHANGELOG.md,docs/SCHEMA.md,.github/.template-sync-version,template/SCHEMA.md,template/README.md,template/CHANGELOG.md,template/registry.csv,template/print_log.csv
+
+      - name: Create and push tag at the finalized commit
+        env:
+          GH_TOKEN: ${{ steps.commit_app_token.outputs.token }}
+          VERSION: ${{ needs.validate.outputs.version }}
+          RELEASE_BRANCH: ${{ needs.validate.outputs.release_branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "vigOS Release Bot"
+          git config user.email "release@vig-os.local"
+          retry --retries 5 --backoff 3 --max-backoff 30 -- git fetch origin "$RELEASE_BRANCH"
+          SHA=$(git rev-parse FETCH_HEAD)
+          git tag -a "$VERSION" "$SHA" -m "Release $VERSION"
+          retry --retries 3 --backoff 5 --max-backoff 30 -- git push origin "$VERSION"
+
+      - name: Extract release notes from CHANGELOG
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          awk -v version="$VERSION" '
+            index($0, "## [" version "]") == 1 {found=1; next}
+            /^## \[/ && found {found=0}
+            found
+          ' CHANGELOG.md > /tmp/release-notes.md
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "Release $VERSION" > /tmp/release-notes.md
+          fi
+
+      - name: Create draft GitHub Release
+        env:
+          GH_TOKEN: ${{ steps.commit_app_token.outputs.token }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$VERSION" --json isDraft >/dev/null 2>&1; then
+            echo "GitHub Release for $VERSION already exists; skipping create."
+            exit 0
+          fi
+          retry --retries 3 --backoff 5 --max-backoff 30 -- gh release create "$VERSION" \
+            --title "$VERSION" \
+            --notes-file /tmp/release-notes.md \
+            --verify-tag \
+            --draft
+          echo "Draft Release created — publish from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases, then merge the release PR."

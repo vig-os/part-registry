@@ -1,0 +1,162 @@
+# Sync main to dev
+#
+# Keeps dev current with main by opening a PR from a disposable sync branch.
+# main and dev are both write-protected, so this never pushes to either directly;
+# changes land through a PR that satisfies branch protection. After a release
+# merges to main (via finalize-release.yml + the manual promote step), this
+# brings the dated ## [X.Y.Z] section and the fresh ## Unreleased back into dev.
+#
+# Unlike the devcontainer original this runs on a plain runner (no container):
+# it only needs git + gh. Auth uses the two org GitHub Apps, matching
+# template-sync.yml: COMMIT_APP_* for the branch push, RELEASE_APP_* for the PR.
+# No-op on forks (they keep only main, no dev). See docs/RELEASE_CYCLE.md.
+#
+# Triggers: push to main · manual workflow_dispatch
+
+name: Sync main to dev
+
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: sync-main-to-dev
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Merge main into dev via PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      SYNC_BRANCH: chore/sync-main-to-dev-${{ github.run_number }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Generate Commit App token
+        id: commit_app_token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        with:
+          app-id: ${{ secrets.COMMIT_APP_ID }}
+          private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ steps.commit_app_token.outputs.token }}
+
+      - name: Check whether dev exists and is behind main
+        id: check
+        run: |
+          set -euo pipefail
+          git fetch origin main dev || true
+          if ! git show-ref --verify --quiet refs/remotes/origin/dev; then
+            echo "No dev branch (fork or pre-release repo); nothing to sync."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          BEHIND=$(git rev-list --count origin/main ^origin/dev)
+          if [ "$BEHIND" = "0" ]; then
+            echo "dev is already up to date with main."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dev is behind main by $BEHIND commit(s); creating sync PR."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate Release App token
+        if: steps.check.outputs.skip != 'true'
+        id: release_app_token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Check for an existing open sync PR
+        if: steps.check.outputs.skip != 'true'
+        id: existing_pr
+        env:
+          GH_TOKEN: ${{ steps.release_app_token.outputs.token }}
+        run: |
+          set -euo pipefail
+          OPEN=$(gh pr list --base dev --state open --limit 200 --json headRefName \
+            --jq '[.[] | select(.headRefName | startswith("chore/sync-main-to-dev-"))] | length')
+          echo "count=$OPEN" >> "$GITHUB_OUTPUT"
+          if [ "$OPEN" != "0" ]; then
+            echo "An open sync PR already exists — skipping."
+          fi
+
+      - name: Detect merge conflicts
+        if: steps.check.outputs.skip != 'true' && steps.existing_pr.outputs.count == '0'
+        id: merge_check
+        run: |
+          set -euo pipefail
+          if git merge-tree --write-tree origin/dev origin/main >/dev/null 2>&1; then
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
+            echo "No conflicts between origin/dev and origin/main."
+          else
+            rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "conflict=true" >> "$GITHUB_OUTPUT"
+              echo "::warning::Merge conflicts detected between origin/dev and origin/main."
+            else
+              echo "::error::git merge-tree failed (exit $rc)"
+              exit "$rc"
+            fi
+          fi
+
+      - name: Create sync branch from main
+        if: steps.check.outputs.skip != 'true' && steps.existing_pr.outputs.count == '0'
+        run: |
+          set -euo pipefail
+          git checkout -b "$SYNC_BRANCH" origin/main
+          git push origin "$SYNC_BRANCH"
+
+      - name: Create PR
+        if: steps.check.outputs.skip != 'true' && steps.existing_pr.outputs.count == '0'
+        env:
+          GH_TOKEN: ${{ steps.release_app_token.outputs.token }}
+          CONFLICT: ${{ steps.merge_check.outputs.conflict }}
+        run: |
+          set -euo pipefail
+          if [ "$CONFLICT" = "true" ]; then
+            TITLE="chore(repo): sync dev with main (conflicts)"
+            BODY=$(cat <<BODY_EOF
+          Automated sync of \`main\` into \`dev\` found **merge conflicts** that need manual resolution.
+
+          \`\`\`bash
+          git fetch origin ${SYNC_BRANCH}:${SYNC_BRANCH}
+          git checkout ${SYNC_BRANCH}
+          git merge origin/dev
+          # resolve conflicts, then
+          git commit
+          git push origin ${SYNC_BRANCH}
+          \`\`\`
+
+          Once pushed, this PR becomes mergeable.
+          BODY_EOF
+          )
+          else
+            TITLE="chore(repo): sync dev with main"
+            BODY="Syncs \`dev\` with \`main\` (sync-main-to-dev workflow)."
+          fi
+
+          PR_URL=$(gh pr create --base dev --head "$SYNC_BRANCH" --title "$TITLE" --body "$BODY")
+          echo "Created PR: $PR_URL"
+
+          if [ "$CONFLICT" = "true" ]; then
+            gh label create "merge-conflict" --color "B60205" --force 2>/dev/null || true
+            gh pr edit "$SYNC_BRANCH" --add-label "merge-conflict" \
+              || echo "::warning::failed to add merge-conflict label"
+          else
+            gh pr merge "$PR_URL" --auto --merge \
+              || echo "::warning::could not enable auto-merge (check branch protection)"
+          fi
