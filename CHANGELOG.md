@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- **GitHub App auth via `client-id`** ([#16](https://github.com/vig-os/part-registry/issues/16)) —
+  all auth-using workflows (`template-sync.yml`, `prepare-release.yml`,
+  `finalize-release.yml`, `sync-main-to-dev.yml`) bump
+  `actions/create-github-app-token` to `v3.2.0` and switch from the deprecated
+  `app-id` input to `client-id` (`COMMIT_APP_CLIENT_ID` /
+  `RELEASE_APP_CLIENT_ID`). Requires the new `*_CLIENT_ID` org secrets.
+
 ## [0.2.0](https://github.com/vig-os/part-registry/releases/tag/0.2.0) - 2026-06-15
 
 ### Added
