@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1](https://github.com/vig-os/part-registry/releases/tag/0.2.1) - 2026-06-15
+
+### Changed
+
+- **GitHub App auth via `client-id`** ([#16](https://github.com/vig-os/part-registry/issues/16)) —
+  all auth-using workflows (`template-sync.yml`, `prepare-release.yml`,
+  `finalize-release.yml`, `sync-main-to-dev.yml`) bump
+  `actions/create-github-app-token` to `v3.2.0` and switch from the deprecated
+  `app-id` input to `client-id` (`COMMIT_APP_CLIENT_ID` /
+  `RELEASE_APP_CLIENT_ID`). Requires the new `*_CLIENT_ID` org secrets.
+- **Fork-facing machinery split out under `template/.github/`** ([#16](https://github.com/vig-os/part-registry/issues/16)) —
+  everything a fork runs is now authored under `template/.github/`: the
+  `template-sync` workflow, its allowlist and version marker, the record/bug/chore
+  issue forms, `registry-update.md`, a fork-scoped `schema-change.md` (for an
+  instance's own `docs/SCHEMA.md`), a record-only `pull_request_template.md` with
+  a relative `/compare/...` URL, and a default `config.yml`. The allowlist gains a
+  `src -> dest` mapping syntax that installs these into a fork's live `.github/`,
+  leaving the upstream's own `.github/` aimed solely at developing the template
+  (its issue/PR forms keep fork-aware, development-scoped wording, and the release
+  workflows stay upstream-only). Instances no longer receive `feature.yml`.
+  `config.yml` ships as a default but is never overwritten; `.template-sync-version`
+  is written by the workflow and now bumped under `template/.github/` at release.
+  Adds a third PR template, `chore.md`, for repo-plumbing work that touches neither
+  records nor the data shape (CI/action-pin bumps, deps, README/docs, template
+  tidy-ups, config) — closing the gap where the `chore` issue form had no matching
+  PR template and such work was forced onto `schema-change.md` with an all-n/a
+  checklist. The allowlist maps it into a fork's live `.github/` alongside the other
+  PR templates.
+
 ## [0.2.0](https://github.com/vig-os/part-registry/releases/tag/0.2.0) - 2026-06-15
 
 ### Added

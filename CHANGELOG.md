@@ -7,19 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added
-
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
-
-## [0.2.1] - TBD
+## [0.2.1](https://github.com/vig-os/part-registry/releases/tag/0.2.1) - 2026-06-15
 
 ### Changed
 
