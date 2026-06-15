@@ -1,1 +1,1 @@
-id,status,minted_at,batch,bound_at,type,description,vendor,part_number,location,notes,minted_by,bound_by,last_edited_at,last_edited_by,labeled
+id,status,minted_at,minted_by,bound_at,bound_by,labeled,location,type,components,properties,last_edited_at,last_edited_by

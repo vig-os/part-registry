@@ -31,15 +31,16 @@ body:
       description: Full 14-char IDs, comma-separated. Leave blank for mint.
       placeholder: 23456789ABCDEF, 2345ABCDEFGHJK
   - type: input
-    id: batch
-    attributes:
-      label: Batch
-      placeholder: B-2026-06-01
-  - type: input
     id: type
     attributes:
       label: Type
       placeholder: PT100
+  - type: input
+    id: components
+    attributes:
+      label: Components
+      description: Subcomponent IDs if this part is an assembly. Cell encoding pending (#11).
+      placeholder: 23456789ABCDEF, 2345ABCDEFGHJK
   - type: input
     id: description
     attributes:
