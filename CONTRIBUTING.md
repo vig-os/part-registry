@@ -164,21 +164,18 @@ section.
 
 ## Releasing (upstream only)
 
-On a `release/X.Y.Z` branch, before tagging, **regenerate the upstream contract
-mirror** so the tag forks consume matches the live source of truth:
+The full release cycle — `dev → release/X.Y.Z → main`, SemVer-for-schema, and the
+`prepare-release` / `finalize-release` / `sync-main-to-dev` workflows — lives in
+[`docs/RELEASE_CYCLE.md`](docs/RELEASE_CYCLE.md). In short: a release freezes the
+`## Unreleased` changelog into a dated `## [X.Y.Z]`, regenerates the
+[`template/`](template/) contract mirror and the schema version stamp /
+[`.github/.template-sync-version`](.github/.template-sync-version) from the live
+files, tags `X.Y.Z`, and ships a draft GitHub Release a human publishes.
 
-1. Promote the `## Unreleased` changelog entries to `## [X.Y.Z]` (above).
-2. Refresh [`template/`](template/) from the live files — copy `docs/SCHEMA.md`,
-   `README.md`, `CHANGELOG.md`, and the canonical example
-   `registry.csv` / `print_log.csv` into `template/`. `template/` is a generated
-   snapshot (like a lockfile): the live files are authored; `template/` is
-   derived. Never hand-edit `template/` independently.
-3. Set [`.github/.template-sync-version`](.github/.template-sync-version) to
-   `X.Y.Z` — a fresh fork generated from this tag is, by definition, in sync with
-   it.
-
-The `template-sync` workflow in forks reads this tag's `template/` to detect what
-changed since their last sync, so a stale mirror would mislead every downstream.
+`template/` is a generated snapshot (like a lockfile): the live files are
+authored; `template/` is derived — never hand-edit it. Forks' `template-sync`
+reads the tag's `template/` to detect what changed since their last sync, so a
+stale mirror would mislead every downstream.
 
 ## Data invariants
 
