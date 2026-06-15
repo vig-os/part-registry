@@ -22,8 +22,9 @@ template*, then make it yours (one time):
    doesn't develop the template, so install the fork-facing set shipped under
    [`template/.github/`](template/.github/) — the `template-sync` workflow, its
    allowlist and version marker, the record/bug/chore forms, `registry-update.md`,
-   a fork-scoped `schema-change.md`, a record-only `pull_request_template.md`, and
-   a default `config.yml` — and remove the upstream-only development machinery:
+   a fork-scoped `schema-change.md`, a `chore.md` for repo-plumbing work, a
+   dispatcher `pull_request_template.md`, and a default `config.yml` — and remove
+   the upstream-only development machinery:
 
    ```sh
    # install the fork-facing machinery into the live .github/
@@ -104,17 +105,21 @@ flowchart LR
 
 ## Change types
 
-Two axes. *What* you touch (data vs structure) picks the PR template and its
-invariant checklist; *intent* (feature/bug/chore) picks the issue form.
+Two axes. *What* you touch (the **artifact**) picks the PR template and its
+checklist; *intent* (feature/bug/chore) picks the issue form. There are three
+artifacts: records, the schema (data shape), and repo plumbing.
 
 | What changes | Issue form | PR template | PR label |
 |--------------|-----------|-------------|----------|
 | Records | Registry change request | `registry-update.md` | `record` |
-| Structure (schema/docs/templates/tooling) | Feature / Bug / Chore | `schema-change.md` | `schema-change` |
+| Schema (data shape / `docs/SCHEMA.md`) | Feature / Bug / Chore | `schema-change.md` | `schema-change` |
+| Repo plumbing (CI, deps, docs, templates, config) | Chore | `chore.md` | `chore` |
 
-A feature, a bug fix, and a chore on the schema all use `schema-change.md` — they
-share the same checklist. The issue form additionally tags intent with
-`feature` / `bug` / `chore`.
+A feature, a bug fix, and a chore **on the schema** all use `schema-change.md` —
+they share the same invariant checklist. A chore that touches neither the records
+nor the data shape (an action-pin bump, a README edit, a CI tweak) uses
+`chore.md` instead, which carries no schema checklist. The issue form additionally
+tags intent with `feature` / `bug` / `chore`.
 
 The issue forms apply their label automatically. PR templates *suggest* the
 artifact label (apply it manually, since there is no labeling automation in this
@@ -175,11 +180,11 @@ development axis (schema, docs, templates, tooling). It uses the
 [Keep a Changelog](https://keepachangelog.com/) format with an `## Unreleased`
 section.
 
-- **Structure PRs** (`schema-change.md`, targeting `dev`): add an entry under
-  `## Unreleased` using the right category (`Added` / `Changed` / `Deprecated` /
-  `Removed` / `Fixed` / `Security`) and paste it into the PR's *Changelog Entry*
-  section. Skip only pure-internal chores with no user-visible or workflow
-  impact (note "No changelog needed" and why). Format:
+- **Structure PRs** (`schema-change.md` and `chore.md`, targeting `dev`): add an
+  entry under `## Unreleased` using the right category (`Added` / `Changed` /
+  `Deprecated` / `Removed` / `Fixed` / `Security`) and paste it into the PR's
+  *Changelog Entry* section. Skip only pure-internal chores with no user-visible or
+  workflow impact (note "No changelog needed" and why). Format:
   `- **Bold title** ([#issue](url))` with indented detail sub-bullets.
 - **Record PRs** (`registry-update.md`, targeting `main`) are **exempt** — the
   CSVs and their git history are the data SSoT and `print_log.csv` is already an

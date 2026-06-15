@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   workflows stay upstream-only). Instances no longer receive `feature.yml`.
   `config.yml` ships as a default but is never overwritten; `.template-sync-version`
   is written by the workflow and now bumped under `template/.github/` at release.
+  Adds a third PR template, `chore.md`, for repo-plumbing work that touches neither
+  records nor the data shape (CI/action-pin bumps, deps, README/docs, template
+  tidy-ups, config) — closing the gap where the `chore` issue form had no matching
+  PR template and such work was forced onto `schema-change.md` with an all-n/a
+  checklist. The allowlist maps it into a fork's live `.github/` alongside the other
+  PR templates.
 
 ## [0.2.0](https://github.com/vig-os/part-registry/releases/tag/0.2.0) - 2026-06-15
 

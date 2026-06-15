@@ -46,4 +46,5 @@ template/.github/ISSUE_TEMPLATE/bug.yml -> .github/ISSUE_TEMPLATE/bug.yml
 template/.github/ISSUE_TEMPLATE/chore.yml -> .github/ISSUE_TEMPLATE/chore.yml
 template/.github/PULL_REQUEST_TEMPLATE/registry-update.md -> .github/PULL_REQUEST_TEMPLATE/registry-update.md
 template/.github/PULL_REQUEST_TEMPLATE/schema-change.md -> .github/PULL_REQUEST_TEMPLATE/schema-change.md
+template/.github/PULL_REQUEST_TEMPLATE/chore.md -> .github/PULL_REQUEST_TEMPLATE/chore.md
 template/.github/pull_request_template.md -> .github/pull_request_template.md
