@@ -1,0 +1,54 @@
+name: Bug
+description: Report a defect in this registry's data, docs, or local templates
+title: "fix(<scope>): "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report something **wrong or broken** in this registry instance — an
+        inconsistent rule in your `docs/SCHEMA.md`, a broken doc link, a
+        malformed row, or a local template that produces bad output. To
+        *correct actual records*, use the "Registry change request" form
+        instead.
+
+        Two things go **elsewhere**: defects in the synced upstream contract
+        (the read-only `template/` mirror, or machinery that arrived via
+        template-sync) belong upstream at `vig-os/part-registry`; bugs in the
+        viewer/editor app belong in `vig-os/part-registry-app`.
+
+        Replace `<scope>` in the title with one of: `schema`, `docs`, `repo`,
+        `templates`.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - schema doc (rules / enums / formats)
+        - registry.csv / print_log.csv data
+        - docs
+        - issue / PR templates
+        - tooling / CI / config (repo)
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong
+      description: Describe the defect.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: where
+    attributes:
+      label: Where / how to reproduce
+      description: File, row id, line, or a link. Steps to reproduce if relevant.
+    validations:
+      required: true

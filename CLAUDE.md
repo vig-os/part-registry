@@ -23,9 +23,10 @@ read-only copy of the same example (part of the upstream mirror).
 | `registry.csv` | Canonical part records, **sorted by `id` ascending**. 13 columns. Ships with a worked example; forks delete the seed rows. |
 | `print_log.csv` | **Append-only** label-print audit trail. 6 columns. Ships with a worked example; forks delete the seed rows. |
 | `docs/SCHEMA.md` | Hand-maintained field/format/lifecycle reference — the authority for all rules below. A fork may trim it to the subset it uses. |
-| `template/` | **Upstream reference set** — pristine, machine-managed copies of `SCHEMA.md`, `README.md`, `CHANGELOG.md` (verbatim) plus worked-example `registry.csv` / `print_log.csv` (rows; their headers are the schema's column fingerprint). Forks **never hand-edit** it; the `template-sync` workflow overwrites it from each release, and a change to `template/SCHEMA.md` is the breaking-change signal. In upstream it is a generated snapshot, refreshed at release time (see `CONTRIBUTING.md` → *Releasing*). |
-| `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE/` | Issue forms (registry change request + feature/bug/chore) and the two PR templates. |
-| `.github/workflows/template-sync.yml`, `.github/.template-sync-paths`, `.github/.template-sync-version` | The downstream sync: workflow, its allowlist of synced paths, and the last-synced upstream version. |
+| `template/` (contract mirror) | **Upstream reference set** — pristine, machine-managed copies of `SCHEMA.md`, `README.md`, `CHANGELOG.md` (verbatim) plus worked-example `registry.csv` / `print_log.csv` (rows; their headers are the schema's column fingerprint). Forks **never hand-edit** these; the `template-sync` workflow overwrites them from each release, and a change to `template/SCHEMA.md` is the breaking-change signal. In upstream they are a generated snapshot, refreshed at release time (see `CONTRIBUTING.md` → *Releasing*). |
+| `template/.github/` (fork-facing machinery) | **Hand-authored** — everything a fork actually runs: the `template-sync.yml` workflow, the `.template-sync-paths` allowlist, the `.template-sync-version` seed, the record/bug/chore issue forms, `registry-update.md`, a fork-scoped `schema-change.md`, a `chore.md` for repo-plumbing PRs, a dispatcher `pull_request_template.md`, and a default `config.yml`. `template-sync` **maps** these into a fork's live `.github/` (per the `src -> dest` lines in the allowlist); `config.yml` ships as a default but is excluded from sync, and the workflow writes `.template-sync-version` itself. Unlike the contract mirror these are authored, not generated. |
+| `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE/` | This repo's **own** issue forms (registry change request + feature/bug/chore) and PR templates, aimed at **developing the upstream template**. Not synced to forks — forks get the separate set under `template/.github/`. The upstream's `.github/` carries no sync plumbing. |
+| `.github/workflows/` (upstream-only) | The release machinery — `prepare-release.yml`, `finalize-release.yml`, `sync-main-to-dev.yml`. Runs only in upstream; forks delete these (they have no `dev`/release cycle). The `template-sync.yml` workflow lives under `template/.github/`, not here. |
 
 ## The model (read `docs/SCHEMA.md` before editing data)
 
@@ -73,12 +74,15 @@ structure) drives the PR template, label, and invariant checklist; *intent*
 | Issue form | Use for | PR template | Label | Commit scope |
 |-----------|---------|-------------|-------|--------------|
 | "Registry change request" | record data (mint/bind/retire/void/edit) — **the only path for record changes, incl. in forks** | `registry-update.md` | `record` | `registry`, `print-log` |
-| "Feature" / "Bug" / "Chore" | repo structure & development (columns/formats, docs, templates, tooling) | `schema-change.md` | `schema-change` (+ `feature`/`bug`/`chore`) | `schema`, `docs`, `repo`, `templates` |
+| "Feature" / "Bug" / "Chore" | the schema / data shape (columns, formats, `docs/SCHEMA.md`) | `schema-change.md` | `schema-change` (+ `feature`/`bug`/`chore`) | `schema`, `docs`, `repo`, `templates` |
+| "Chore" | repo plumbing with no data/schema impact (CI, deps, docs, templates, config) | `chore.md` | `chore` | `repo`, `docs`, `templates` |
 
-The PR templates stay artifact-based on purpose: a feature, a bug fix, and a
-chore on the schema all use `schema-change.md` because they share the same
-invariant checklist. Intent lives in the issue and the commit/PR type
-(`feat`/`fix`/`chore`).
+The PR templates stay artifact-based on purpose, across three artifacts — records,
+the schema, and repo plumbing: a feature, a bug fix, and a chore **on the schema**
+all use `schema-change.md` because they share the same invariant checklist, while
+a chore touching neither records nor the data shape (an action-pin bump, a README
+edit) uses `chore.md`, which carries no schema checklist. Intent lives in the
+issue and the commit/PR type (`feat`/`fix`/`chore`).
 
 Branching: `main` (protected) ← `release/X.Y.Z` ← `dev` (protected integration)
 ← topic branches — with one shortcut: the **data axis skips `dev`**. Record
