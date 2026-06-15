@@ -1,14 +1,9 @@
 # Changelog
 
-All notable **structure** changes to this repo are documented here — schema,
-docs, issue/PR templates, and tooling. Record (data) changes to `registry.csv`
-and `print_log.csv` are **not** tracked here: the CSVs and their git history are
-the data SSoT, and `print_log.csv` is itself an append-only audit log. See
-[`CONTRIBUTING.md`](CONTRIBUTING.md) for the two-axis split.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
-for the schema/template shape that forks consume.
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
@@ -39,9 +34,28 @@ for the schema/template shape that forks consume.
 - **`properties` column** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
   a free-form, type-specific property bag that absorbs the former `description`,
   `vendor`, `part_number`, and `notes` columns.
+- **Release cycle** ([#7](https://github.com/vig-os/part-registry/issues/7))
+  - `docs/RELEASE_CYCLE.md`: the documented `dev → release/X.Y.Z → main` flow and
+    the SemVer-for-schema policy (MAJOR = column removed/renamed/reordered or rule
+    change; MINOR = appended column / new template; PATCH = wording), with the
+    `0.y` pre-1.0 caveat.
+  - `prepare-release.yml` / `finalize-release.yml`: workflows that freeze the
+    changelog, cut `release/X.Y.Z`, refresh `template/` + the schema version stamp,
+    tag, and create a **draft** GitHub Release. They reuse the `devcontainer`
+    image's `prepare-changelog` (single source) and `vig-os/commit-action`.
+  - `sync-main-to-dev.yml`: opens a PR syncing `main` back into `dev` after a
+    release merges.
+  - `.github/PULL_REQUEST_TEMPLATE/release.md`: the release checklist.
+  - A **Schema version** stamp in `docs/SCHEMA.md`, bumped at release alongside
+    `.github/.template-sync-version`, so a fork can tell which release it tracks.
 
 ### Changed
 
+- **CHANGELOG adopts the `prepare-changelog` conventions** ([#7](https://github.com/vig-os/part-registry/issues/7)) —
+  generic Keep a Changelog header and inline-link version headings
+  (`## [0.1.0](…tag…) - date`), so the release tool maintains this file as a
+  single source. The structure-only / two-axis scope note now lives only in
+  `CONTRIBUTING.md`.
 - **`components` / `properties` cell encoding defined** ([#11](https://github.com/vig-os/part-registry/issues/11)) —
   both structured fields are now JSON inside a single CSV cell: `components` a
   JSON array of IDs, `properties` a JSON object. The cells are double-quoted per
@@ -66,7 +80,7 @@ for the schema/template shape that forks consume.
   print-job mechanics with no audit value; the printed label is reproducible from
   `layout` / `size_mm` / `extra`. 8 → 6 columns.
 
-## [0.1.0] - 2026-06-11
+## [0.1.0](https://github.com/vig-os/part-registry/releases/tag/0.1.0) - 2026-06-11
 
 ### Added
 
@@ -84,5 +98,3 @@ for the schema/template shape that forks consume.
     `README.md`.
   - Flag the upstream-absolute *Schema reference* link in `config.yml` so forks
     repoint it to their own `docs/SCHEMA.md`.
-
-[0.1.0]: https://github.com/vig-os/part-registry/releases/tag/0.1.0
