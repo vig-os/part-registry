@@ -11,17 +11,21 @@ here — validation tooling and the viewer/editor app (`vig-os/part-registry-app
 live in separate repos. "Working in this repo" means editing CSV rows by hand
 while preserving invariants, or editing the schema/docs/templates.
 
-The seeded rows in the CSVs are illustrative examples; in a real fork they get
-deleted. Do not treat them as fixtures to keep.
+The live root CSVs ship with an **illustrative worked example** (a fork deletes
+the seed rows and keeps the header). Every column and its format is documented in
+`docs/SCHEMA.md`, and `template/registry.csv` / `template/print_log.csv` hold a
+read-only copy of the same example (part of the upstream mirror).
 
 ## Files
 
 | File | What it is |
 |------|-----------|
-| `registry.csv` | Canonical part records, **sorted by `id` ascending**. 16 columns. |
-| `print_log.csv` | **Append-only** label-print audit trail. 9 columns. |
-| `docs/SCHEMA.md` | Hand-maintained field/format/lifecycle reference — the authority for all rules below. |
+| `registry.csv` | Canonical part records, **sorted by `id` ascending**. 13 columns. Ships with a worked example; forks delete the seed rows. |
+| `print_log.csv` | **Append-only** label-print audit trail. 6 columns. Ships with a worked example; forks delete the seed rows. |
+| `docs/SCHEMA.md` | Hand-maintained field/format/lifecycle reference — the authority for all rules below. A fork may trim it to the subset it uses. |
+| `template/` | **Upstream reference set** — pristine, machine-managed copies of `SCHEMA.md`, `README.md`, `CHANGELOG.md` (verbatim) plus worked-example `registry.csv` / `print_log.csv` (rows; their headers are the schema's column fingerprint). Forks **never hand-edit** it; the `template-sync` workflow overwrites it from each release, and a change to `template/SCHEMA.md` is the breaking-change signal. In upstream it is a generated snapshot, refreshed at release time (see `CONTRIBUTING.md` → *Releasing*). |
 | `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE/` | Issue forms (registry change request + feature/bug/chore) and the two PR templates. |
+| `.github/workflows/template-sync.yml`, `.github/.template-sync-paths`, `.github/.template-sync-version` | The downstream sync: workflow, its allowlist of synced paths, and the last-synced upstream version. |
 
 ## The model (read `docs/SCHEMA.md` before editing data)
 
@@ -46,12 +50,16 @@ repo — verify them by hand:
 3. Allowed status transitions only: `unbound -> bound`, `bound -> bound`
    (rebind), `bound -> retired`, `* -> void`. **No back-transitions.**
 4. Per-status field rules:
-   - `unbound` — no `bound_at`/`bound_by`/`type`/`location`; `labeled=no`.
+   - `unbound` — no `bound_at`/`bound_by`/`type`/`location`/`components`/`properties`; `labeled=no`.
    - `bound` — MUST have `bound_at` + `bound_by`; `labeled` is `yes`/`no`.
-   - `retired` — retains historical binding fields; record reason in `notes`.
-   - `void` — no `bound_at`/`bound_by`; `labeled=no`; record reason in `notes`.
+   - `retired` — retains historical binding fields; record reason in `properties`.
+   - `void` — no `bound_at`/`bound_by`; `labeled=no`; record reason in `properties`.
 5. `labeled=yes` only on `bound` or `retired` rows.
-6. New columns are **appended at the end** (forward-compatible); never reorder.
+6. New columns are normally **appended at the end** (forward-compatible) and the
+   order is otherwise stable — a deliberate reorder is reserved for breaking
+   schema redesigns at a release boundary (e.g. the v0.2 column re-shuffle).
+7. `components` references are valid: each listed ID exists, with no
+   self-reference or cycles (documented in `docs/SCHEMA.md`; not auto-enforced).
 
 The `registry-update.md` PR template encodes these as a checklist — use it as
 your verification list when changing records.

@@ -1,0 +1,262 @@
+# Template sync
+#
+# Keeps an instance (a repo generated from the vig-os/part-registry template) up
+# to date with upstream *structure* releases. On a schedule it detects a new
+# upstream release tag and opens a PR that:
+#   - refreshes the pristine upstream contract mirror under template/, and
+#   - overwrites the functional machinery (issue/PR templates, workflows),
+# strictly per the allowlist in .github/.template-sync-paths. Instance-owned
+# files (your records, your docs/SCHEMA.md, README, CHANGELOG, CLAUDE.md, and
+# your repointed config.yml) are never touched.
+#
+# The breaking-change signal is a plain self-diff: because template/ is exactly
+# "what this instance last synced", a change to template/SCHEMA.md in the PR
+# means the upstream contract moved — flagged as POTENTIALLY BREAKING for the
+# maintainer to adopt into their own docs/SCHEMA.md + registry.csv by hand. This
+# never compares against the instance's own files, so a fork that intentionally
+# trimmed a column is never falsely flagged.
+#
+# Strictly release-gated via .github/.template-sync-version (the PR bumps it), so
+# each upstream release yields at most one sync PR.
+#
+# Auth mirrors vig-os/commit-action's sync-main-to-dev.yml — two GitHub App
+# tokens, no PAT:
+#   COMMIT_APP_*  — contents:write + workflows:write, used by commit-action to
+#                   create the GitHub-signed (API) commit, including any
+#                   .github/workflows/ changes.
+#   RELEASE_APP_* — pull-requests:write + issues:write, used to open/label the PR.
+# Instances inside the vig-os org inherit these org secrets automatically;
+# external forks install equivalent Apps or disable this workflow.
+#
+# This workflow ships in the template and is inherited by every instance; the
+# `if:` guard below makes it a no-op in the upstream template repo itself.
+#
+# Triggers: weekly schedule · manual workflow_dispatch
+
+name: Template sync
+
+on:  # yamllint disable-line rule:truthy
+  schedule:
+    - cron: "0 6 * * 1"  # Mondays 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: template-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  UPSTREAM: vig-os/part-registry
+
+jobs:
+  sync:
+    name: Open PR for new upstream release
+    # No-op in the upstream template; only instances sync.
+    if: github.repository != 'vig-os/part-registry'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Generate Commit App token
+        id: commit-app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        with:
+          app-id: ${{ secrets.COMMIT_APP_ID }}
+          private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
+
+      - name: Checkout instance
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ steps.commit-app-token.outputs.token }}
+
+      - name: Resolve latest upstream release
+        id: upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=$(gh release view --repo "$UPSTREAM" --json tagName -q .tagName)
+          CURRENT=$(tr -d '[:space:]' < .github/.template-sync-version 2>/dev/null || echo "")
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "branch=chore/template-sync-${TAG}" >> "$GITHUB_OUTPUT"
+          if [ "${TAG}" = "${CURRENT}" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Already at upstream release ${TAG}. Nothing to do."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Upstream release ${TAG} differs from current '${CURRENT:-<none>}'."
+          fi
+
+      - name: Check for an existing sync PR
+        id: existing-pr
+        if: steps.upstream.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.upstream.outputs.branch }}
+        run: |
+          set -euo pipefail
+          COUNT=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          echo "count=${COUNT}" >> "$GITHUB_OUTPUT"
+          if [ "${COUNT}" != "0" ]; then
+            echo "A sync PR for ${BRANCH} is already open — skipping."
+          fi
+
+      - name: Pull allowlisted paths from the release tag
+        id: assemble
+        if: steps.upstream.outputs.changed == 'true' && steps.existing-pr.outputs.count == '0'
+        env:
+          TAG: ${{ steps.upstream.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git remote add upstream "https://github.com/${UPSTREAM}.git" 2>/dev/null \
+            || git remote set-url upstream "https://github.com/${UPSTREAM}.git"
+          git fetch --no-tags --depth 1 upstream "refs/tags/${TAG}:refs/tags/${TAG}"
+
+          # Snapshot the allowlist first: it is itself allowlisted, so the loop
+          # may overwrite it mid-iteration — read it fully before touching disk.
+          mapfile -t PATHS < .github/.template-sync-paths
+
+          # Overwrite each allowlisted path from the tag (mirror -> template/,
+          # machinery -> .github/). Missing paths in the tag are skipped, not
+          # deleted locally.
+          for p in "${PATHS[@]}"; do
+            case "$p" in ''|\#*) continue ;; esac
+            git checkout "${TAG}" -- "$p" 2>/dev/null \
+              || echo "::notice::'${p}' not present in ${TAG}; skipped."
+          done
+
+          # We own the marker — set it to the tag we are syncing to.
+          printf '%s\n' "${TAG}" > .github/.template-sync-version
+
+          # Changed paths = tracked modifications + new untracked files.
+          CHANGED=$( { git diff --name-only HEAD; \
+                       git ls-files --others --exclude-standard; } \
+                     | sort -u | paste -sd, - )
+          echo "file_paths=${CHANGED}" >> "$GITHUB_OUTPUT"
+          if [ -z "${CHANGED}" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No net changes between this instance and ${TAG}."
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Changed paths: ${CHANGED}"
+          fi
+
+      - name: Detect schema drift (signal only)
+        id: signal
+        if: steps.assemble.outputs.has_changes == 'true'
+        run: |
+          set -euo pipefail
+          # The contract moved iff the mirrored schema changed in this PR.
+          if git diff --quiet HEAD -- template/SCHEMA.md; then
+            echo "breaking=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "breaking=true" >> "$GITHUB_OUTPUT"
+            echo "template/SCHEMA.md changed — flagging potentially breaking."
+          fi
+          # Precise column note when an example header changed.
+          COLS=""
+          for f in template/registry.csv template/print_log.csv; do
+            OLD=$(git show "HEAD:${f}" 2>/dev/null | head -1 || echo "")
+            NEW=$(head -1 "$f" 2>/dev/null || echo "")
+            if [ -n "${NEW}" ] && [ "${OLD}" != "${NEW}" ]; then
+              COLS="${COLS}- \`${f}\` header: \`${OLD}\` -> \`${NEW}\`"$'\n'
+            fi
+          done
+          {
+            echo "columns<<COLS_EOF"
+            printf '%s' "${COLS}"
+            echo "COLS_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create sync branch at HEAD
+        if: steps.assemble.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ steps.commit-app-token.outputs.token }}
+          BRANCH: ${{ steps.upstream.outputs.branch }}
+        run: |
+          set -euo pipefail
+          SHA=$(git rev-parse HEAD)
+          gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/${BRANCH}" 2>/dev/null || true
+          gh api -X POST "repos/${{ github.repository }}/git/refs" \
+            -f ref="refs/heads/${BRANCH}" -f sha="${SHA}"
+
+      - name: Commit changes via API (signed)
+        if: steps.assemble.outputs.has_changes == 'true'
+        uses: vig-os/commit-action@1bc004353d08d9332a0cb54920b148256220c8e0  # v0.2.0
+        env:
+          GITHUB_TOKEN: ${{ steps.commit-app-token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: refs/heads/${{ steps.upstream.outputs.branch }}
+          COMMIT_MESSAGE: "chore(repo): sync template ${{ steps.upstream.outputs.tag }}"
+          FILE_PATHS: ${{ steps.assemble.outputs.file_paths }}
+          MAX_ATTEMPTS: "3"
+
+      - name: Generate Release App token
+        if: steps.assemble.outputs.has_changes == 'true'
+        id: release-app-token
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859  # v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Open pull request
+        if: steps.assemble.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ steps.release-app-token.outputs.token }}
+          BRANCH: ${{ steps.upstream.outputs.branch }}
+          TAG: ${{ steps.upstream.outputs.tag }}
+          BREAKING: ${{ steps.signal.outputs.breaking }}
+          COLUMNS: ${{ steps.signal.outputs.columns }}
+        run: |
+          set -euo pipefail
+
+          # Changelog delta this instance is catching up on (mirror self-diff).
+          CHANGES=$(git diff HEAD -- template/CHANGELOG.md \
+                    | grep -E '^\+' | grep -vE '^\+\+\+' | sed 's/^\+//' || true)
+
+          BANNER=""
+          if [ "${BREAKING}" = "true" ]; then
+            BANNER=$(cat <<BANNER_EOF
+          > [!WARNING]
+          > **Potentially breaking — the supported schema changed.** Review
+          > \`template/SCHEMA.md\` in this diff, then update your own
+          > \`docs/SCHEMA.md\` and \`registry.csv\` if the change applies to you.
+          > This PR does **not** migrate your data.
+
+          ${COLUMNS:+Header changes:
+          ${COLUMNS}}
+          BANNER_EOF
+          )
+          fi
+
+          BODY=$(cat <<BODY_EOF
+          Automated **template sync** to upstream release [\`${TAG}\`](https://github.com/${UPSTREAM}/releases/tag/${TAG}).
+
+          Refreshes the upstream contract mirror under \`template/\` and the functional machinery (issue/PR templates, workflows) per \`.github/.template-sync-paths\`, and bumps \`.github/.template-sync-version\` to \`${TAG}\`. Your records, \`docs/SCHEMA.md\`, README, CHANGELOG and \`config.yml\` are untouched.
+
+          ${BANNER}
+
+          ### What changed upstream
+
+          ${CHANGES:-_See the release notes._}
+
+          ---
+
+          _Notes: \`template/\` is machine-managed — don't hand-edit it. Upstream file **deletions** and new \`config.yml\` contact links are not auto-applied; reconcile by hand if needed._
+          BODY_EOF
+          )
+
+          gh label create schema-change --color 1D76DB --force 2>/dev/null || true
+          gh pr create \
+            --base main --head "${BRANCH}" \
+            --title "chore(repo): sync template ${TAG}" \
+            --body "${BODY}" \
+            --label schema-change \
+            || echo "::warning::gh pr create failed (PR may already exist)."
