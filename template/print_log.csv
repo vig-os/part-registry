@@ -1,2 +1,4 @@
-id,printed_at,printed_by,layout,size_mm,extra,copies,output_mode,batch_label
-23456789ABCDEF,2026-06-01T13:45:00+00:00,bob,horz,12,,1,single,B-2026-06-01
+id,printed_at,printed_by,layout,size_mm,extra
+23456789ABCDEF,2026-06-01T13:45:00+00:00,bob,horz,12,
+2345ABCDEFGHJK,2026-06-02T09:35:00+00:00,carol,vert,9,
+BCDEFGHJKMNPQR,2026-05-21T09:05:00+00:00,bob,flag,12,cable OD 6mm

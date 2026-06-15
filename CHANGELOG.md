@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.2.0](https://github.com/vig-os/part-registry/releases/tag/0.2.0) - 2026-06-15
+
 ### Added
 
 - **Downstream template-sync** ([#9](https://github.com/vig-os/part-registry/issues/9))
