@@ -38,11 +38,16 @@ for the schema/template shape that forks consume.
   documented in `docs/SCHEMA.md` but not yet auto-enforced.
 - **`properties` column** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
   a free-form, type-specific property bag that absorbs the former `description`,
-  `vendor`, `part_number`, and `notes` columns. Cell encoding for `components` /
-  `properties` is still to be decided ([#11](https://github.com/vig-os/part-registry/issues/11)).
+  `vendor`, `part_number`, and `notes` columns.
 
 ### Changed
 
+- **`components` / `properties` cell encoding defined** ([#11](https://github.com/vig-os/part-registry/issues/11)) —
+  both structured fields are now JSON inside a single CSV cell: `components` a
+  JSON array of IDs, `properties` a JSON object. The cells are double-quoted per
+  RFC-4180 (inner `"` doubled); empty stays the empty string. Documented in
+  `docs/SCHEMA.md`, demonstrated in the worked-example rows, and reflected in the
+  `record.yml` request form.
 - **BREAKING: `registry.csv` columns re-shuffled** ([#8](https://github.com/vig-os/part-registry/issues/8))
   into a more logical order (`id, status, minted_at, minted_by, bound_at,
   bound_by, labeled, location, type, components, properties, last_edited_at,

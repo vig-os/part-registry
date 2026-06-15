@@ -18,6 +18,11 @@ and route structural edits through the Feature / Bug / Chore issue forms +
   a GitHub user by construction.
 - CSV files use a header row, `,` delimiter, UTF-8, and `\n` line endings.
   Empty fields are the empty string (no `NULL`).
+- **Quoting** follows RFC-4180: a cell is double-quoted only when its value
+  embeds a `,`, `"`, or newline — in practice the JSON-encoded `components` /
+  `properties` cells (see [Cell encoding](#cell-encoding)). Inner `"` are doubled
+  (`""`). Every other cell stays unquoted. An empty structured field is the empty
+  string, never `[]` or `{}`.
 
 ## `registry.csv`
 
@@ -40,20 +45,45 @@ Column order (13 columns):
 | 2 | `status` | enum | `unbound` \| `bound` \| `retired` \| `void`. |
 | 3 | `minted_at` | datetime | When the ID was minted. |
 | 4 | `minted_by` | actor | Who minted the ID. |
-| 5 | `bound_at` | datetime | When bound to a part. Empty unless `bound`. |
-| 6 | `bound_by` | actor | Who bound the part. Empty unless `bound`. |
+| 5 | `bound_at` | datetime | When bound to a part. Set on `bound`/`retired`; empty on `unbound`/`void`. |
+| 6 | `bound_by` | actor | Who bound the part. Set on `bound`/`retired`; empty on `unbound`/`void`. |
 | 7 | `labeled` | enum | `yes` \| `no` — whether a physical sticker is on the part. `yes` only valid when `bound` or `retired`. |
 | 8 | `location` | string | Physical location / path. |
 | 9 | `type` | string | Part type, e.g. `PT100`. Drives the expected `properties` schema (later). |
-| 10 | `components` | list of ids | Direct subcomponent IDs when this part is an assembly; empty otherwise. **Encoding pending** (tracked in #11). See [Component referential integrity](#component-referential-integrity). |
-| 11 | `properties` | free-form bag | Type-specific attributes — absorbs the former `description`, `vendor`, `part_number`, `notes`. Per-type schema and cell **encoding pending** (tracked in #11). |
+| 10 | `components` | JSON array (CSV-quoted) | Direct subcomponent IDs when this part is an assembly; empty string otherwise. See [Cell encoding](#cell-encoding) and [Component referential integrity](#component-referential-integrity). |
+| 11 | `properties` | JSON object (CSV-quoted) | Type-specific attributes — absorbs the former `description`, `vendor`, `part_number`, `notes`. Empty string when none. See [Cell encoding](#cell-encoding). |
 | 12 | `last_edited_at` | datetime | Last edit timestamp. |
 | 13 | `last_edited_by` | actor | Who last edited the row. |
 
-> **Encoding note.** `components` and `properties` are structured fields whose
-> in-cell encoding is **not yet decided** (#11) — a JSON-family format would force
-> CSV quoting, a comma-free mini-format avoids it. Until then the worked-example
-> rows leave both fields empty, so no rows depend on the choice.
+### Cell encoding
+
+`components` and `properties` are structured fields encoded as **JSON inside a
+single CSV cell**:
+
+- **`components`** — a JSON **array** of subcomponent IDs, e.g.
+  `["23456789ABCDEF","2345ABCDEFGHJK"]`. Empty assemblies use the empty string,
+  not `[]`.
+- **`properties`** — a JSON **object** mapping keys to values, e.g.
+  `{"vendor":"Acme","part_number":"PT100-A"}`. No attributes uses the empty
+  string, not `{}`.
+
+Because JSON embeds `,` and `"`, these cells are **double-quoted per RFC-4180**,
+with inner `"` doubled. As they appear in the raw CSV:
+
+```
+"[""23456789ABCDEF"",""2345ABCDEFGHJK""]"
+"{""vendor"":""Acme"",""part_number"":""PT100-A""}"
+```
+
+Any compliant CSV reader (Python `csv`, pandas) decodes these transparently; a
+naive line/`split(',')` reader does not.
+
+**`properties` keys.** Keys are free-form strings, but the recommended set
+absorbs the columns folded in by the v0.2 redesign: `description`, `vendor`,
+`part_number`, `notes`. `retired` and `void` rows record their reason under a
+`reason` key (see [Per-status field rules](#per-status-field-rules)). The `type`
+field drives the *expected* key set for a part; a formal per-type `properties`
+schema is a future refinement and is not enforced here.
 
 ### Component referential integrity
 

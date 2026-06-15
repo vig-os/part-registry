@@ -1,9 +1,9 @@
 id,status,minted_at,minted_by,bound_at,bound_by,labeled,location,type,components,properties,last_edited_at,last_edited_by
-23456789ABCDEF,bound,2026-06-01T08:00:00+00:00,alice,2026-06-01T14:00:00+00:00,bob,yes,lab / loop-A / supply-T,PT100,,,2026-06-01T14:00:00+00:00,bob
+23456789ABCDEF,bound,2026-06-01T08:00:00+00:00,alice,2026-06-01T14:00:00+00:00,bob,yes,lab / loop-A / supply-T,PT100,,"{""vendor"":""Acme"",""part_number"":""PT100-A1"",""description"":""Pt100 RTD temperature sensor""}",2026-06-01T14:00:00+00:00,bob
 2345ABCDEFGHJK,bound,2026-06-01T08:00:00+00:00,alice,2026-06-02T09:30:00+00:00,carol,yes,lab / exhaust / T3,Thermocouple K-type,,,2026-06-02T09:30:00+00:00,carol
 456789ABCDEFGH,unbound,2026-06-01T08:00:00+00:00,alice,,,no,,,,,,
 789ABCDEFGHJKM,bound,2026-06-01T08:00:00+00:00,alice,2026-06-03T08:15:00+00:00,bob,yes,lab / loop-A / return,Flow sensor,,,2026-06-03T08:15:00+00:00,bob
-89ABCDEFGHJKMN,void,2026-06-01T08:00:00+00:00,alice,,,no,,PT100,,,,
+89ABCDEFGHJKMN,void,2026-06-01T08:00:00+00:00,alice,,,no,,PT100,,"{""reason"":""mis-mint; duplicate ID scrapped on arrival""}",,
 9ABCDEFGHJKMNP,unbound,2026-06-08T08:00:00+00:00,bob,,,no,,,,,,
-ABCDEFGHJKMNPQ,bound,2026-06-08T08:00:00+00:00,bob,2026-06-09T10:00:00+00:00,dave,no,lab / loop-A / supply-T,Pressure transducer,,,2026-06-09T10:00:00+00:00,dave
-BCDEFGHJKMNPQR,retired,2026-05-20T08:00:00+00:00,alice,2026-05-21T09:00:00+00:00,bob,yes,lab / bench / CH-4,RTD probe,,,2026-06-05T12:00:00+00:00,carol
+ABCDEFGHJKMNPQ,bound,2026-06-08T08:00:00+00:00,bob,2026-06-09T10:00:00+00:00,dave,no,lab / loop-A / supply-T,Pressure transducer,"[""23456789ABCDEF""]","{""vendor"":""Keller"",""part_number"":""PA-21Y"",""description"":""Piezoresistive pressure transducer assembly""}",2026-06-09T10:00:00+00:00,dave
+BCDEFGHJKMNPQR,retired,2026-05-20T08:00:00+00:00,alice,2026-05-21T09:00:00+00:00,bob,yes,lab / bench / CH-4,RTD probe,,"{""reason"":""decommissioned; superseded by ABCDEFGHJKMNPQ"",""vendor"":""TE Connectivity""}",2026-06-05T12:00:00+00:00,carol

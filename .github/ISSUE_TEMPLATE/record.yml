@@ -39,20 +39,23 @@ body:
     id: components
     attributes:
       label: Components
-      description: Subcomponent IDs if this part is an assembly. Cell encoding pending (#11).
+      description: Subcomponent IDs if this part is an assembly, comma-separated. The maintainer encodes these into the `components` JSON array per `docs/SCHEMA.md`.
       placeholder: 23456789ABCDEF, 2345ABCDEFGHJK
   - type: input
     id: description
     attributes:
       label: Description
+      description: Free-form details. Composed into the `properties` JSON object by the maintainer (see `docs/SCHEMA.md`).
   - type: input
     id: vendor
     attributes:
       label: Vendor
+      description: Composed into the `properties` JSON object.
   - type: input
     id: part_number
     attributes:
       label: Part number
+      description: Composed into the `properties` JSON object.
   - type: input
     id: location
     attributes:
