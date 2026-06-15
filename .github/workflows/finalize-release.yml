@@ -168,7 +168,7 @@ jobs:
           sed -i -E "s|^\*\*Schema version:\*\* .*|**Schema version:** ${VERSION}|" docs/SCHEMA.md
           grep -qE "^\*\*Schema version:\*\* ${VERSION}$" docs/SCHEMA.md \
             || { echo "ERROR: schema version stamp not updated in docs/SCHEMA.md"; exit 1; }
-          printf '%s\n' "$VERSION" > .github/.template-sync-version
+          printf '%s\n' "$VERSION" > template/.github/.template-sync-version
 
       - name: Refresh upstream contract mirror (template/)
         run: |
@@ -191,7 +191,7 @@ jobs:
 
             Set release date ${{ needs.validate.outputs.release_date }}, bump the
             schema version stamp and .template-sync-version, and refresh template/.
-          FILE_PATHS: CHANGELOG.md,docs/SCHEMA.md,.github/.template-sync-version,template/SCHEMA.md,template/README.md,template/CHANGELOG.md,template/registry.csv,template/print_log.csv
+          FILE_PATHS: CHANGELOG.md,docs/SCHEMA.md,template/.github/.template-sync-version,template/SCHEMA.md,template/README.md,template/CHANGELOG.md,template/registry.csv,template/print_log.csv
 
       - name: Create and push tag at the finalized commit
         env:

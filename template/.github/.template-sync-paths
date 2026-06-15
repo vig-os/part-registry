@@ -1,0 +1,49 @@
+# Template-sync allowlist — the only paths the template-sync workflow pulls
+# from a new upstream release. See template/.github/workflows/template-sync.yml.
+#
+# This file, and all the fork-facing machinery, is authored under
+# template/.github/ so the upstream's own .github/ stays aimed at developing the
+# template. The sync installs it into an instance's live .github/, where the
+# workflow then reads it from .github/.template-sync-paths.
+#
+# Syntax: one entry per line; blank lines and lines starting with `#` are
+# ignored. Two forms:
+#   src                     identity — read `src` from the release tag, write to
+#                           the same path (the contract mirror; a fork keeps it
+#                           under template/ as a read-only reference).
+#   src -> dest             mapped — read `src` from the release tag, write to
+#                           `dest`. Used for every fork-facing machinery file:
+#                           authored under template/.github/, installed into the
+#                           instance's live .github/.
+#
+# Everything NOT listed here is instance-owned and never touched by the sync:
+# your records (registry.csv, print_log.csv), your working schema doc
+# (docs/SCHEMA.md), README.md, CHANGELOG.md, CLAUDE.md, your repointed
+# .github/ISSUE_TEMPLATE/config.yml, and .github/.template-sync-version (the
+# workflow writes the latter directly to the synced tag).
+
+# --- Contract mirror (identity) --------------------------------------------
+# Pristine, machine-managed copies of the upstream contract. NEVER hand-edit
+# these in an instance — the sync overwrites them wholesale, and their diff is
+# the signal you review (a change to template/SCHEMA.md is potentially breaking;
+# adopt it into your own docs/SCHEMA.md + registry.csv on your own terms).
+template/SCHEMA.md
+template/registry.csv
+template/print_log.csv
+template/README.md
+template/CHANGELOG.md
+
+# --- Fork-facing machinery (mapped) ----------------------------------------
+# Authored upstream under template/.github/; installed into an instance's live
+# .github/. The sync workflow and this allowlist are themselves mapped, so an
+# instance self-updates them. config.yml is intentionally absent — it is
+# instance-owned and shipped only as a default (template/.github/ISSUE_TEMPLATE/
+# config.yml); .template-sync-version is absent too (the workflow writes it).
+template/.github/workflows/template-sync.yml -> .github/workflows/template-sync.yml
+template/.github/.template-sync-paths -> .github/.template-sync-paths
+template/.github/ISSUE_TEMPLATE/record.yml -> .github/ISSUE_TEMPLATE/record.yml
+template/.github/ISSUE_TEMPLATE/bug.yml -> .github/ISSUE_TEMPLATE/bug.yml
+template/.github/ISSUE_TEMPLATE/chore.yml -> .github/ISSUE_TEMPLATE/chore.yml
+template/.github/PULL_REQUEST_TEMPLATE/registry-update.md -> .github/PULL_REQUEST_TEMPLATE/registry-update.md
+template/.github/PULL_REQUEST_TEMPLATE/schema-change.md -> .github/PULL_REQUEST_TEMPLATE/schema-change.md
+template/.github/pull_request_template.md -> .github/pull_request_template.md

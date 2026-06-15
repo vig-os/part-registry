@@ -32,7 +32,7 @@ breaking change bumps the **MINOR** (`0.1.z → 0.2.0`) and additions bump the
 **PATCH**. (That is why the column redesign in this cycle is `0.2.0`, not `1.0.0`.)
 
 Every breaking change must spell out fork-migration steps in `CHANGELOG.md` and
-the release PR — the downstream [`template-sync`](../.github/workflows/template-sync.yml)
+the release PR — the downstream [`template-sync`](../template/.github/workflows/template-sync.yml)
 flags a changed `template/SCHEMA.md` as *potentially breaking*, but it never
 migrates a fork's data.
 
@@ -82,7 +82,7 @@ tag is absent, then on the release branch:
 
 - sets the date: `## [X.Y.Z] - TBD` → `## [X.Y.Z](…/releases/tag/X.Y.Z) - YYYY-MM-DD`;
 - bumps the **schema version stamp** in [`docs/SCHEMA.md`](SCHEMA.md) and
-  [`.github/.template-sync-version`](../.github/.template-sync-version) to `X.Y.Z`;
+  [`template/.github/.template-sync-version`](../template/.github/.template-sync-version) to `X.Y.Z`;
 - refreshes the [`template/`](../template/) contract mirror from the live files;
 - commits all of that to the release branch;
 - creates and pushes the annotated tag `X.Y.Z`;

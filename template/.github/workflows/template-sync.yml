@@ -4,10 +4,13 @@
 # to date with upstream *structure* releases. On a schedule it detects a new
 # upstream release tag and opens a PR that:
 #   - refreshes the pristine upstream contract mirror under template/, and
-#   - overwrites the functional machinery (issue/PR templates, workflows),
+#   - installs the fork-facing machinery — this workflow, its allowlist, and the
+#     issue/PR templates — which upstream authors under template/.github/ and the
+#     allowlist MAPS into the live .github/ (so the upstream's own .github/ forms
+#     can stay aimed at developing the template).
 # strictly per the allowlist in .github/.template-sync-paths. Instance-owned
-# files (your records, your docs/SCHEMA.md, README, CHANGELOG, CLAUDE.md, and
-# your repointed config.yml) are never touched.
+# files (your records, your docs/SCHEMA.md, README, CHANGELOG, CLAUDE.md, your
+# repointed config.yml, and .template-sync-version) are never overwritten.
 #
 # The breaking-change signal is a plain self-diff: because template/ is exactly
 # "what this instance last synced", a change to template/SCHEMA.md in the PR
@@ -28,8 +31,11 @@
 # Instances inside the vig-os org inherit these org secrets automatically;
 # external forks install equivalent Apps or disable this workflow.
 #
-# This workflow ships in the template and is inherited by every instance; the
-# `if:` guard below makes it a no-op in the upstream template repo itself.
+# This workflow is authored under template/.github/ (with the rest of the
+# fork-facing machinery) and installed into each instance's live .github/ by the
+# sync / fork bootstrap. Upstream never runs it — it does not live in upstream's
+# .github/workflows/ — and the `if:` guard below is a defensive belt so it can
+# never act against the upstream repo even if copied there.
 #
 # Triggers: weekly schedule · manual workflow_dispatch
 
@@ -123,13 +129,31 @@ jobs:
           # may overwrite it mid-iteration — read it fully before touching disk.
           mapfile -t PATHS < .github/.template-sync-paths
 
-          # Overwrite each allowlisted path from the tag (mirror -> template/,
-          # machinery -> .github/). Missing paths in the tag are skipped, not
-          # deleted locally.
-          for p in "${PATHS[@]}"; do
-            case "$p" in ''|\#*) continue ;; esac
-            git checkout "${TAG}" -- "$p" 2>/dev/null \
-              || echo "::notice::'${p}' not present in ${TAG}; skipped."
+          # Overwrite each allowlisted path from the tag. Two line forms:
+          #   src           identity — contract mirror + shared plumbing, written
+          #                 back to the same path.
+          #   src -> dest   mapped — fork-facing templates authored under
+          #                 template/.github/, written into the live .github/.
+          # Missing sources in the tag are skipped, not deleted locally.
+          for line in "${PATHS[@]}"; do
+            case "$line" in ''|\#*) continue ;; esac
+            if [[ "$line" == *" -> "* ]]; then
+              src="${line%% -> *}"; dest="${line##* -> }"
+            else
+              src="$line"; dest="$line"
+            fi
+            # Trim surrounding whitespace.
+            src="${src#"${src%%[![:space:]]*}"}"; src="${src%"${src##*[![:space:]]}"}"
+            dest="${dest#"${dest%%[![:space:]]*}"}"; dest="${dest%"${dest##*[![:space:]]}"}"
+            if [ "$src" = "$dest" ]; then
+              git checkout "${TAG}" -- "$src" 2>/dev/null \
+                || echo "::notice::'${src}' not present in ${TAG}; skipped."
+            elif git cat-file -e "${TAG}:${src}" 2>/dev/null; then
+              mkdir -p "$(dirname "$dest")"
+              git show "${TAG}:${src}" > "$dest"
+            else
+              echo "::notice::'${src}' not present in ${TAG}; skipped."
+            fi
           done
 
           # We own the marker — set it to the tag we are syncing to.
@@ -153,7 +177,9 @@ jobs:
         if: steps.assemble.outputs.has_changes == 'true'
         run: |
           set -euo pipefail
-          # The contract moved iff the mirrored schema changed in this PR.
+          # The contract moved iff the mirrored schema changed in this PR. Changes
+          # to the fork-facing templates under template/.github/ are routine
+          # machinery refreshes and never trip this signal.
           if git diff --quiet HEAD -- template/SCHEMA.md; then
             echo "breaking=false" >> "$GITHUB_OUTPUT"
           else
@@ -239,7 +265,7 @@ jobs:
           BODY=$(cat <<BODY_EOF
           Automated **template sync** to upstream release [\`${TAG}\`](https://github.com/${UPSTREAM}/releases/tag/${TAG}).
 
-          Refreshes the upstream contract mirror under \`template/\` and the functional machinery (issue/PR templates, workflows) per \`.github/.template-sync-paths\`, and bumps \`.github/.template-sync-version\` to \`${TAG}\`. Your records, \`docs/SCHEMA.md\`, README, CHANGELOG and \`config.yml\` are untouched.
+          Refreshes the upstream contract mirror under \`template/\` and the fork-facing machinery — the sync workflow, its allowlist, and the issue/PR templates — which the allowlist maps from \`template/.github/\` into \`.github/\`, per \`.github/.template-sync-paths\`, and bumps \`.github/.template-sync-version\` to \`${TAG}\`. Your records, \`docs/SCHEMA.md\`, README, CHANGELOG and \`config.yml\` are untouched.
 
           ${BANNER}
 

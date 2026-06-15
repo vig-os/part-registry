@@ -2,9 +2,9 @@
 
 **Schema version:** 0.2.0
 
-<!-- The version this document describes. The release cycle bumps it (and mirrors
-it into `.github/.template-sync-version`) when a release is cut — see
-docs/RELEASE_CYCLE.md. A fork reads this to tell which schema release it tracks. -->
+<!-- The version this document describes. The release cycle bumps it (and the
+template-sync version marker) when a release is cut — see docs/RELEASE_CYCLE.md.
+A fork reads this to tell which schema release it tracks. -->
 
 Hand-maintained documentation of the data files in this registry. There is
 intentionally **no machine-readable contract or automated validation in this
