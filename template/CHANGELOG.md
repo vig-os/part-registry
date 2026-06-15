@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2](https://github.com/vig-os/part-registry/releases/tag/0.2.2) - 2026-06-15
+
+### Fixed
+
+- **`template-sync.yml` existing-PR check fails for lack of `pull-requests` scope**
+  ([#22](https://github.com/vig-os/part-registry/issues/22)) — the *Check for an
+  existing sync PR* step runs `gh pr list` (which queries
+  `repository.pullRequests` via GraphQL) with the default `GITHUB_TOKEN`, but the
+  top-level `permissions` block granted only `contents: read`, so every instance
+  run on a new upstream release aborted with *Resource not accessible by
+  integration*. Adds `pull-requests: read` to the workflow's `permissions`. Lands
+  upstream so the fix propagates via the next sync (the file is in the allowlist,
+  so instances cannot durably patch it themselves).
+
 ## [0.2.1](https://github.com/vig-os/part-registry/releases/tag/0.2.1) - 2026-06-15
 
 ### Changed
