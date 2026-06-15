@@ -29,9 +29,9 @@ for the schema/template shape that forks consume.
   - Commits are created via `vig-os/commit-action` (GitHub-signed) using the
     `COMMIT_APP` / `RELEASE_APP` tokens — no PAT. No-op in the upstream template
     itself.
-  - Root `registry.csv` / `print_log.csv` now ship **header-only**; document the
-    fork-setup and release steps in `CONTRIBUTING.md`, `README.md`, and
-    `CLAUDE.md`.
+  - A read-only copy of the worked-example `registry.csv` / `print_log.csv` is
+    mirrored under `template/`; fork-setup and release steps documented in
+    `CONTRIBUTING.md`, `README.md`, and `CLAUDE.md`.
 - **`components` column** ([#8](https://github.com/vig-os/part-registry/issues/8)) —
   models assembly composition as a list of subcomponent registry IDs. Referential
   integrity (exists / no self-reference / no cycles / bound-or-retired) is
@@ -43,9 +43,6 @@ for the schema/template shape that forks consume.
 
 ### Changed
 
-- **Root CSVs are header-only starters** — no seed rows to delete on fork; the
-  illustrative example now lives under `template/` (a read-only worked example),
-  with every column and format documented in `docs/SCHEMA.md`.
 - **BREAKING: `registry.csv` columns re-shuffled** ([#8](https://github.com/vig-os/part-registry/issues/8))
   into a more logical order (`id, status, minted_at, minted_by, bound_at,
   bound_by, labeled, location, type, components, properties, last_edited_at,

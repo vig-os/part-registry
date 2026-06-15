@@ -52,8 +52,8 @@ Column order (13 columns):
 
 > **Encoding note.** `components` and `properties` are structured fields whose
 > in-cell encoding is **not yet decided** (#11) — a JSON-family format would force
-> CSV quoting, a comma-free mini-format avoids it. Until then the registry ships
-> header-only and no rows depend on the choice.
+> CSV quoting, a comma-free mini-format avoids it. Until then the worked-example
+> rows leave both fields empty, so no rows depend on the choice.
 
 ### Component referential integrity
 

@@ -11,17 +11,17 @@ here — validation tooling and the viewer/editor app (`vig-os/part-registry-app
 live in separate repos. "Working in this repo" means editing CSV rows by hand
 while preserving invariants, or editing the schema/docs/templates.
 
-The live root CSVs ship **header-only** (a fork's data starts empty) — there are
-no seed rows to delete. Every column and its format is documented in
-`docs/SCHEMA.md`, and `template/registry.csv` / `template/print_log.csv` are
-worked examples (read-only; part of the upstream mirror).
+The live root CSVs ship with an **illustrative worked example** (a fork deletes
+the seed rows and keeps the header). Every column and its format is documented in
+`docs/SCHEMA.md`, and `template/registry.csv` / `template/print_log.csv` hold a
+read-only copy of the same example (part of the upstream mirror).
 
 ## Files
 
 | File | What it is |
 |------|-----------|
-| `registry.csv` | Canonical part records, **sorted by `id` ascending**. 13 columns. Header-only in the template. |
-| `print_log.csv` | **Append-only** label-print audit trail. 8 columns. Header-only in the template. |
+| `registry.csv` | Canonical part records, **sorted by `id` ascending**. 13 columns. Ships with a worked example; forks delete the seed rows. |
+| `print_log.csv` | **Append-only** label-print audit trail. 8 columns. Ships with a worked example; forks delete the seed rows. |
 | `docs/SCHEMA.md` | Hand-maintained field/format/lifecycle reference — the authority for all rules below. A fork may trim it to the subset it uses. |
 | `template/` | **Upstream reference set** — pristine, machine-managed copies of `SCHEMA.md`, `README.md`, `CHANGELOG.md` (verbatim) plus worked-example `registry.csv` / `print_log.csv` (rows; their headers are the schema's column fingerprint). Forks **never hand-edit** it; the `template-sync` workflow overwrites it from each release, and a change to `template/SCHEMA.md` is the breaking-change signal. In upstream it is a generated snapshot, refreshed at release time (see `CONTRIBUTING.md` → *Releasing*). |
 | `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE/` | Issue forms (registry change request + feature/bug/chore) and the two PR templates. |
