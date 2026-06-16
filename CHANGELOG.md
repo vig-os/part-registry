@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`template-sync` opens its PR via REST instead of `gh pr create`**
+  ([#31](https://github.com/vig-os/part-registry/issues/31)) — `gh pr create`
+  uses the GraphQL `createPullRequest` mutation, which GitHub rejects for App
+  installation tokens (`Resource not accessible by integration`) even when they
+  hold `pull_requests: write`, so the *Open pull request* step failed on every
+  run. It now calls `POST /repos/{repo}/pulls` (and labels via REST). The
+  `|| echo "::warning::…"` fallback that masked the failure as a green run is
+  removed — the "PR already exists" case is handled by the earlier existing-PR
+  check, so any failure here is real and now fails the job.
+
 ### Security
 
 ## [0.2.3](https://github.com/vig-os/part-registry/releases/tag/0.2.3) - 2026-06-15

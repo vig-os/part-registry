@@ -296,9 +296,17 @@ jobs:
           )
 
           gh label create schema-change --color 1D76DB --force 2>/dev/null || true
-          gh pr create \
-            --base main --head "${BRANCH}" \
-            --title "chore(repo): sync template ${TAG}" \
-            --body "${BODY}" \
-            --label schema-change \
-            || echo "::warning::gh pr create failed (PR may already exist)."
+
+          # Open the PR via the REST endpoint, not `gh pr create`. `gh pr create`
+          # uses the GraphQL createPullRequest mutation, which GitHub rejects for
+          # App installation tokens ("Resource not accessible by integration")
+          # even when they hold pull-requests:write; REST POST /pulls is allowed.
+          # No `|| warning` fallback: the "PR already exists" case is handled by
+          # the earlier existing-PR check, so a failure here is real and must fail.
+          PR_NUMBER=$(gh api --method POST "repos/${GITHUB_REPOSITORY}/pulls" \
+            -f title="chore(repo): sync template ${TAG}" \
+            -f head="${BRANCH}" -f base=main -f body="${BODY}" \
+            --jq '.number')
+          echo "Opened PR #${PR_NUMBER}"
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" \
+            -f "labels[]=schema-change" >/dev/null
